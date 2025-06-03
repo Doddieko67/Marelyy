@@ -17,17 +17,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  final notificationSettings = await FirebaseMessaging.instance
-      .requestPermission(provisional: true);
-
-  // For apple platforms, ensure the APNS token is available before making any FCM plugin API calls
-  final apnsToken = await FirebaseMessaging.instance.getAPNSToken();
-  if (apnsToken != null) {
-    // APNS token is available, make FCM plugin API requests...
-  }
-  final fcmToken = await FirebaseMessaging.instance.getToken();
-  print("fcmmmm $fcmToken \n\n\n\n");
-
   // Observa los cambios de autenticación
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
