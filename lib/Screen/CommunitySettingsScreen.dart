@@ -1,18 +1,24 @@
 // lib/screen/CommunitySettingsScreen.dart
+import 'package:classroom_mejorado/services/task_service.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Para Clipboard
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:uuid/uuid.dart'; // Para generar IDs únicos (opcional, puedes usar otra lógica)
-import 'package:intl/intl.dart'; // Para formatear fechas
+// NO MÁS 'package:firebase_storage/firebase_storage.dart'; directamente aquí
+import 'package:image_picker/image_picker.dart'; // Solo para ImageSource
+import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:classroom_mejorado/theme/app_typography.dart';
+import 'package:classroom_mejorado/services/file_upload_service.dart'; // IMPORTA TU NUEVO SERVICIO
 
 class CommunitySettingsScreen extends StatefulWidget {
   final String communityId;
-  final String communityName; // Para mostrar en el título
+  String communityName;
 
-  const CommunitySettingsScreen({
+  CommunitySettingsScreen({
     super.key,
     required this.communityId,
     required this.communityName,
@@ -23,62 +29,56 @@ class CommunitySettingsScreen extends StatefulWidget {
       _CommunitySettingsScreenState();
 }
 
-class _CommunitySettingsScreenState extends State<CommunitySettingsScreen> {
+class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
+    with TickerProviderStateMixin {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
-  late TextEditingController _customImageUrlController;
-  final Uuid _uuid = const Uuid(); // Para generar códigos
+  final Uuid _uuid = const Uuid();
+  final FileUploadService _fileUploadService =
+      FileUploadService(); // INSTANCIA DEL SERVICIO
 
-  // Stream para escuchar los cambios en los datos de la comunidad en tiempo real
   late Stream<DocumentSnapshot> _communityStream;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
 
-  // Variables para el manejo de imagen
-  bool _useCustomUrl = false;
-  int _selectedAvatarIndex = 0;
-  bool _isImageExpanded = false;
-
-  // Lista de avatares predefinidos (misma que en CreateCommunityScreen)
-  final List<String> _communityAvatars = [
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBpVSBqjPGyXCSt3yWiVBFbpLaxQdaTyDd9bx-yqMX52P2JnirC2AP_ZS_exB3O_aBgc5lf7XWfyXrimUHcH03V6LYKbqsRGpjdH2pNJirc_QP0yZvfgqrhv8foadJ_C2vk8lDcZ4uimqukqSf2prP3m4r97jc9KsMPez6DYIFCnw5IXpp0gdUsgoJlOcLF1s2y0W_9-MEzf6FmG4mmx27tt6z0dKoT7zP24mSRkAxWLmjhiPKO2nbpD4wOaIGqixvsWO48q3M',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuChfRjiApW79uRw-wUlwr12aE3K5ecrJ72jaEAMQdfyxfWUWgp_8SS3bNjX5kvUnMxRplQlAod6pK-m8IBedFstIrDPDOBfq3eIdrWoyEHC-Ca2FW_Xtgy7TphnRkSttS8bTqyrLL3CI1awHaWBULRUty_zxpYh6U9YlmGxFpW20X_TRWEHv_YsxYyyTx8r0LQh56zbCXc9MClQ-y5nw6cmfeZjPEWhlHda8RBe3QDpsrrBn2DyG8fU4bvrtewRi6Ge_yAewsU',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBFXD8Jqn5TltNCXcqaqregwKKFZqwK2qw0r4izTjWvSzNkcZD2bK34P94WhOKndD8bPDWBYgtVF-nGy9YORfCWBHR1y9B9FUBngOD3QLK1ynpEo8Dp3dqdpgUc0miRJCdYO2R_ARRloyTf82jgzoFFW2GqDDicl4_KwuzexSiT1B1euTdNiMy6m10IzIDPpZFGOjdBdBNEnEs1psujabaN-sJ3h0K-gp-2Keuu5tThGZR3zdb-HBvA_su0KtXDr9n6on-Qctc',
-  ];
+  bool _isLoading = false;
+  // File? _pickedImageFile; // Ya no necesitamos manejar el File aquí directamente si el servicio lo hace
+  String? _currentNetworkImageUrl;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    _nameController = TextEditingController(text: widget.communityName);
     _descriptionController = TextEditingController();
-    _customImageUrlController = TextEditingController();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+
     _communityStream = FirebaseFirestore.instance
         .collection('communities')
         .doc(widget.communityId)
         .snapshots();
 
-    // Precargar los datos actuales cuando el stream cargue por primera vez
-    _communityStream.first.then((snapshot) {
-      if (snapshot.exists) {
-        final data = snapshot.data() as Map<String, dynamic>;
-        _nameController.text = data['name'] ?? '';
-        _descriptionController.text = data['description'] ?? '';
+    _animationController.forward();
 
-        // Configurar la imagen actual
-        final currentImageUrl = data['imageUrl'] ?? '';
-        if (currentImageUrl.isNotEmpty) {
-          final predefinedIndex = _communityAvatars.indexOf(currentImageUrl);
-          if (predefinedIndex != -1) {
-            // Es una imagen predefinida
-            setState(() {
-              _selectedAvatarIndex = predefinedIndex;
-              _useCustomUrl = false;
-            });
-          } else {
-            // Es una URL personalizada
-            setState(() {
-              _useCustomUrl = true;
-              _customImageUrlController.text = currentImageUrl;
-            });
-          }
+    _communityStream.first.then((snapshot) {
+      if (mounted && snapshot.exists) {
+        final data = snapshot.data() as Map<String, dynamic>;
+        _nameController.text = data['name'] ?? widget.communityName;
+        _descriptionController.text = data['description'] ?? '';
+        if (mounted) {
+          setState(() {
+            _currentNetworkImageUrl = data['imageUrl'] as String?;
+            widget.communityName = _nameController.text;
+          });
         }
       }
     });
@@ -88,387 +88,1009 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen> {
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _customImageUrlController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
-  // --- Funciones de validación ---
-  bool _isValidImageUrl(String url) {
-    if (url.isEmpty) return false;
-
-    final Uri? uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) return false;
-
-    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
-
-    final String lowerPath = uri.path.toLowerCase();
-    return lowerPath.endsWith('.jpg') ||
-        lowerPath.endsWith('.jpeg') ||
-        lowerPath.endsWith('.png') ||
-        lowerPath.endsWith('.gif') ||
-        lowerPath.endsWith('.webp') ||
-        url.contains('googleusercontent.com') ||
-        url.contains('imgur.com') ||
-        url.contains('unsplash.com') ||
-        url.contains('pixabay.com');
-  }
-
-  String _getFinalImageUrl() {
-    if (_useCustomUrl && _customImageUrlController.text.trim().isNotEmpty) {
-      return _customImageUrlController.text.trim();
-    }
-    return _communityAvatars[_selectedAvatarIndex];
-  }
-
-  // --- Funciones de Firebase ---
-
-  // Actualizar nombre de la comunidad
-  void _updateCommunityName() async {
-    if (_nameController.text.trim().isEmpty) {
+  Future<void> _showSuccessMessage(String message) async {
+    // ... (sin cambios)
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('El nombre de la comunidad no puede estar vacío'),
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.onError,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                message,
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.green.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
+    }
+  }
+
+  Future<void> _showErrorMessage(String message) async {
+    // ... (sin cambios)
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.error,
+                color: Theme.of(context).colorScheme.onError,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onError,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+  }
+
+  // MODIFICADO: Usar el servicio para seleccionar y subir
+  Future<void> _handleImageSelectionAndUpload(ImageSource source) async {
+    if (_isLoading) return;
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    try {
+      final String?
+      downloadUrl = await _fileUploadService.pickAndUploadCommunityImage(
+        source: source,
+        communityId: widget.communityId,
+        // puedes pasar imageQuality, maxWidth, maxHeight si los personalizas
+      );
+
+      if (downloadUrl != null) {
+        // Guardar la nueva URL en Firestore
+        await FirebaseFirestore.instance
+            .collection('communities')
+            .doc(widget.communityId)
+            .update({'imageUrl': downloadUrl});
+
+        if (mounted) {
+          setState(() {
+            _currentNetworkImageUrl = downloadUrl;
+            // _pickedImageFile = null; // El servicio maneja el archivo, no es necesario aquí
+          });
+        }
+        _showSuccessMessage('Imagen de comunidad actualizada.');
+      } else {
+        // El usuario canceló o hubo un error en la selección/subida manejado por el servicio
+        // _showErrorMessage('No se seleccionó ninguna imagen o hubo un error.'); // Opcional, el servicio podría mostrar su propio error
+      }
+    } catch (e) {
+      _showErrorMessage('Error al procesar la imagen: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // ELIMINADO: _pickImage y _uploadAndSaveImage (ahora en el servicio o combinados en _handleImageSelectionAndUpload)
+
+  void _updateCommunityName() async {
+    // ... (sin cambios)
+    if (_nameController.text.trim().isEmpty) {
+      _showErrorMessage('El nombre no puede estar vacío.');
       return;
     }
+    DocumentSnapshot currentData = await FirebaseFirestore.instance
+        .collection('communities')
+        .doc(widget.communityId)
+        .get();
+    String currentFirestoreName = currentData.exists
+        ? (currentData.data() as Map<String, dynamic>)['name'] ?? ''
+        : '';
+    if (_nameController.text.trim() == currentFirestoreName) return;
+
+    setState(() => _isLoading = true);
     try {
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(widget.communityId)
           .update({'name': _nameController.text.trim()});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Nombre de la comunidad actualizado!')),
-        );
+        setState(() => widget.communityName = _nameController.text.trim());
       }
+      _showSuccessMessage('Nombre actualizado.');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar el nombre: $e')),
-        );
-      }
+      _showErrorMessage('Error al actualizar nombre: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Actualizar descripción de la comunidad
   void _updateCommunityDescription() async {
+    // ... (sin cambios)
+    DocumentSnapshot currentData = await FirebaseFirestore.instance
+        .collection('communities')
+        .doc(widget.communityId)
+        .get();
+    String currentFirestoreDesc = currentData.exists
+        ? (currentData.data() as Map<String, dynamic>)['description'] ?? ''
+        : '';
+    if (_descriptionController.text.trim() == currentFirestoreDesc) return;
+
+    setState(() => _isLoading = true);
     try {
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(widget.communityId)
           .update({'description': _descriptionController.text.trim()});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Descripción actualizada!')),
-        );
-      }
+      _showSuccessMessage('Descripción actualizada.');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar la descripción: $e')),
-        );
-      }
+      _showErrorMessage('Error al actualizar descripción: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Actualizar imagen de la comunidad
-  void _updateCommunityImage() async {
-    final newImageUrl = _getFinalImageUrl();
-
-    if (_useCustomUrl && !_isValidImageUrl(newImageUrl)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor ingresa una URL de imagen válida'),
-        ),
-      );
-      return;
-    }
-
-    try {
-      await FirebaseFirestore.instance
-          .collection('communities')
-          .doc(widget.communityId)
-          .update({'imageUrl': newImageUrl});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('¡Imagen de la comunidad actualizada!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al actualizar la imagen: $e')),
-        );
-      }
-    }
-  }
-
-  // Generar o refrescar código de unión
   void _generateJoinCode() async {
-    String newCode = _uuid.v4().substring(0, 6).toUpperCase();
+    // ... (sin cambios)
+    setState(() => _isLoading = true);
     try {
+      String? newCode = await _generateUniqueJoinCode();
+      if (newCode == null) {
+        _showErrorMessage('No se pudo generar código.');
+        return;
+      }
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(widget.communityId)
           .update({'joinCode': newCode});
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Nuevo Código de Unión: $newCode')),
-        );
-      }
+      _showSuccessMessage('Nuevo código: $newCode');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al generar el código: $e')),
-        );
-      }
+      _showErrorMessage('Error al generar código: $e');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  // Copiar código al portapapeles
+  Future<String?> _generateUniqueJoinCode() async {
+    // ... (sin cambios)
+    const int maxAttempts = 10;
+    for (int attempt = 0; attempt < maxAttempts; attempt++) {
+      String candidateCode = _generateRandomCode();
+      bool isUnique = await _isCodeUnique(candidateCode);
+      if (isUnique) return candidateCode;
+    }
+    return null;
+  }
+
+  String _generateRandomCode() {
+    // ... (sin cambios)
+    const String chars = 'ABCDEFGHIJKLMNPQRSTUVWXYZ123456789';
+    final random = DateTime.now().millisecondsSinceEpoch;
+    String uuidPart = _uuid
+        .v4()
+        .replaceAll('-', '')
+        .substring(0, 3)
+        .toUpperCase();
+    String timePart = (random % 1000000).toString().padLeft(6, '0');
+    String combined = uuidPart + timePart;
+    String result = '';
+    for (int i = 0; i < 6; i++) {
+      int index =
+          (combined.codeUnitAt(i % combined.length) + (random ~/ (i + 1)) + i) %
+          chars.length;
+      result += chars[index];
+    }
+    return result.substring(0, 6);
+  }
+
+  Future<bool> _isCodeUnique(String code) async {
+    // ... (sin cambios)
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('communities')
+          .where('joinCode', isEqualTo: code)
+          .limit(1)
+          .get();
+      return querySnapshot.docs.isEmpty;
+    } catch (e) {
+      print('Error verificando unicidad: $e');
+      return false;
+    }
+  }
+
   void _copyJoinCode(String code) {
+    // ... (sin cambios)
     Clipboard.setData(ClipboardData(text: code));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('¡Código de unión copiado al portapapeles!'),
-      ),
-    );
+    _showSuccessMessage('Código copiado.');
   }
 
-  // Salir de la comunidad
-  void _leaveCommunity() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes iniciar sesión para abandonar una comunidad'),
-        ),
-      );
-      return;
-    }
-
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Abandonar Comunidad?'),
-        content: const Text(
-          '¿Estás seguro de que quieres abandonar esta comunidad? Perderás el acceso a su contenido.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Abandonar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await FirebaseFirestore.instance
-            .collection('communities')
-            .doc(widget.communityId)
-            .update({
-              'members': FieldValue.arrayRemove([user.uid]),
-            });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('¡Has abandonado la comunidad exitosamente!'),
-            ),
-          );
-          Navigator.of(context).pop();
-          Navigator.of(context).popUntil((route) => route.isFirst);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al abandonar la comunidad: $e')),
-          );
-        }
-      }
-    }
-  }
-
-  // Eliminar la comunidad
-  void _deleteCommunity() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Debes iniciar sesión para eliminar una comunidad'),
-        ),
-      );
-      return;
-    }
-
+  Future<List<DocumentSnapshot>> _getPotentialNewOwners(
+    String currentOwnerId,
+  ) async {
+    // ... (sin cambios)
     final communityDoc = await FirebaseFirestore.instance
         .collection('communities')
         .doc(widget.communityId)
         .get();
-    if (!communityDoc.exists || communityDoc.get('ownerId') != user.uid) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No eres el propietario de esta comunidad'),
-          ),
-        );
-      }
+    if (!communityDoc.exists) return [];
+    final List<String> memberIds = List<String>.from(
+      communityDoc.get('members') ?? [],
+    );
+    final List<String> potentialNewOwnerIds = memberIds
+        .where((id) => id != currentOwnerId)
+        .toList();
+    if (potentialNewOwnerIds.isEmpty) return [];
+    try {
+      final QuerySnapshot userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: potentialNewOwnerIds)
+          .get();
+      return userQuery.docs;
+    } catch (e) {
+      print("Error obteniendo usuarios: $e");
+      return [];
+    }
+  }
+
+  Future<void> _showTransferOwnershipDialog() async {
+    // ... (sin cambios en la lógica interna, pero ya usa _isLoading)
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final List<DocumentSnapshot> otherMembers = await _getPotentialNewOwners(
+      currentUser.uid,
+    );
+    if (otherMembers.isEmpty) {
+      _showErrorMessage('No hay otros miembros para transferir.');
       return;
     }
-
-    final bool? confirm = await showDialog<bool>(
+    String? selectedNewOwnerId;
+    final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿ELIMINAR COMUNIDAD?'),
-        content: const Text(
-          'ADVERTENCIA: Esta acción es irreversible. Todos los mensajes de chat, tareas y datos de esta comunidad se eliminarán permanentemente.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text(
-              'Eliminar',
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.admin_panel_settings,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Transferir',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Selecciona el miembro al que deseas transferir la propiedad. Seguirás siendo miembro.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...otherMembers.map((doc) {
+                      final userData = doc.data() as Map<String, dynamic>;
+                      final String userName =
+                          userData['name'] ??
+                          userData['displayName'] ??
+                          'Usuario';
+                      final String? userPhotoUrl = userData['photoURL'];
+                      return Card(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceVariant.withOpacity(0.5),
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: RadioListTile<String>(
+                          title: Text(
+                            userName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          secondary: CircleAvatar(
+                            backgroundImage:
+                                userPhotoUrl != null && userPhotoUrl.isNotEmpty
+                                ? NetworkImage(userPhotoUrl)
+                                : null,
+                            child: userPhotoUrl == null || userPhotoUrl.isEmpty
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          value: doc.id,
+                          groupValue: selectedNewOwnerId,
+                          onChanged: (String? value) =>
+                              setStateDialog(() => selectedNewOwnerId = value),
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: selectedNewOwnerId != null
+                      ? () => Navigator.of(dialogContext).pop(true)
+                      : null,
+                  child: const Text('Transferir'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
-
-    if (confirm == true) {
+    if (confirmed == true && selectedNewOwnerId != null) {
+      setState(() => _isLoading = true);
       try {
         await FirebaseFirestore.instance
             .collection('communities')
             .doc(widget.communityId)
-            .collection('messages')
-            .get()
-            .then((snapshot) {
-              for (DocumentSnapshot doc in snapshot.docs) {
-                doc.reference.delete();
-              }
-            });
-        await FirebaseFirestore.instance
-            .collection('communities')
-            .doc(widget.communityId)
-            .collection('tasks')
-            .get()
-            .then((snapshot) {
-              for (DocumentSnapshot doc in snapshot.docs) {
-                doc.reference.delete();
-              }
-            });
-        await FirebaseFirestore.instance
-            .collection('communities')
-            .doc(widget.communityId)
-            .delete();
-
+            .update({'ownerId': selectedNewOwnerId});
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('¡Comunidad eliminada exitosamente!')),
-          );
-          Navigator.of(context).pop();
+          final newOwnerDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(selectedNewOwnerId)
+              .get();
+          final newOwnerName = newOwnerDoc.exists
+              ? (newOwnerDoc.data()?['name'] ??
+                    newOwnerDoc.data()?['displayName'] ??
+                    'Nuevo Propietario')
+              : 'Nuevo Propietario';
+          _showSuccessMessage('Propiedad transferida a $newOwnerName.');
+        }
+      } catch (e) {
+        _showErrorMessage('Error al transferir: $e');
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _showAssignNewOwnerAndLeaveDialog() async {
+    // ... (sin cambios en la lógica interna, pero ya usa _isLoading)
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return;
+    final List<DocumentSnapshot> otherMembers = await _getPotentialNewOwners(
+      currentUser.uid,
+    );
+    if (otherMembers.isEmpty) {
+      _showErrorMessage('No hay otros miembros para transferir.');
+      return;
+    }
+    String? selectedNewOwnerId;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.exit_to_app,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Abandonar',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.errorContainer.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Para abandonar como propietario, asigna un nuevo propietario:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...otherMembers.map((doc) {
+                      final userData = doc.data() as Map<String, dynamic>;
+                      final String userName =
+                          userData['name'] ??
+                          userData['displayName'] ??
+                          'Usuario';
+                      final String? userPhotoUrl = userData['photoURL'];
+                      return Card(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceVariant.withOpacity(0.5),
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: RadioListTile<String>(
+                          title: Text(
+                            userName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          secondary: CircleAvatar(
+                            backgroundImage:
+                                userPhotoUrl != null && userPhotoUrl.isNotEmpty
+                                ? NetworkImage(userPhotoUrl)
+                                : null,
+                            child: userPhotoUrl == null || userPhotoUrl.isEmpty
+                                ? const Icon(Icons.person)
+                                : null,
+                          ),
+                          value: doc.id,
+                          groupValue: selectedNewOwnerId,
+                          onChanged: (String? value) =>
+                              setStateDialog(() => selectedNewOwnerId = value),
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(
+                    'Cancelar',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                FilledButton(
+                  onPressed: selectedNewOwnerId != null
+                      ? () => Navigator.of(dialogContext).pop(true)
+                      : null,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  child: const Text('Asignar y Abandonar'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    if (confirmed == true && selectedNewOwnerId != null) {
+      setState(() => _isLoading = true);
+      try {
+        final WriteBatch batch = FirebaseFirestore.instance.batch();
+        final communityRef = FirebaseFirestore.instance
+            .collection('communities')
+            .doc(widget.communityId);
+        batch.update(communityRef, {'ownerId': selectedNewOwnerId});
+        batch.update(communityRef, {
+          'members': FieldValue.arrayRemove([currentUser.uid]),
+        });
+        await batch.commit();
+        if (mounted) {
+          _showSuccessMessage('Has abandonado la comunidad.');
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error al eliminar la comunidad: $e')),
-          );
+        _showErrorMessage('Error al abandonar: $e');
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  void _leaveCommunity() async {
+    // ... (sin cambios en la lógica interna, pero ya usa _isLoading)
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _showErrorMessage('Debes iniciar sesión.');
+      return;
+    }
+    final communityDoc = await FirebaseFirestore.instance
+        .collection('communities')
+        .doc(widget.communityId)
+        .get();
+    if (!communityDoc.exists) {
+      _showErrorMessage('Comunidad no encontrada.');
+      return;
+    }
+    final String? ownerId = communityDoc.get('ownerId');
+    final List<String> memberIds = List<String>.from(
+      communityDoc.get('members') ?? [],
+    );
+
+    if (user.uid == ownerId) {
+      if (memberIds.length == 1) {
+        final bool? confirmDelete = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Theme.of(context).colorScheme.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
+                const SizedBox(width: 8),
+                Text(
+                  'Salir',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            content: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.errorContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Eres el único miembro y propietario. ¿Deseas eliminarla permanentemente?',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(
+                  'Cancelar',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Sí, Eliminar'),
+              ),
+            ],
+          ),
+        );
+        if (confirmDelete == true) _deleteCommunity();
+      } else {
+        _showAssignNewOwnerAndLeaveDialog();
+      }
+    } else {
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.exit_to_app,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '¿Abandonar?',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            '¿Seguro que quieres abandonar esta comunidad?',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: Theme.of(context).colorScheme.primary),
+              ),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: const Text('Abandonar'),
+            ),
+          ],
+        ),
+      );
+      if (confirm == true) {
+        setState(() => _isLoading = true);
+        try {
+          await FirebaseFirestore.instance
+              .collection('communities')
+              .doc(widget.communityId)
+              .update({
+                'members': FieldValue.arrayRemove([user.uid]),
+              });
+          if (mounted) {
+            _showSuccessMessage('Has abandonado la comunidad.');
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          }
+        } catch (e) {
+          _showErrorMessage('Error al abandonar: $e');
+        } finally {
+          if (mounted) setState(() => _isLoading = false);
         }
       }
     }
   }
 
-  // --- Widgets Auxiliares de UI ---
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-      child: Text(
-        title,
-        style: theme.textTheme.titleMedium?.copyWith(
-          fontFamily: fontFamilyPrimary,
-          fontWeight: FontWeight.bold,
-          letterSpacing: -0.015 * 18,
-          color: theme.colorScheme.onBackground,
+  // En CommunitySettingsScreen.dart
+
+  Future<void> _deleteCommunity() async {
+    final _firestore = FirebaseFirestore.instance;
+    final communityId = widget.communityId;
+    try {
+      // 1. Obtener el documento de la comunidad
+      DocumentSnapshot communityDoc = await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(communityId)
+          .get();
+
+      if (!communityDoc.exists) {
+        print('Comunidad $communityId no encontrada.');
+        return;
+      }
+
+      // 2. Borrar la imagen de la comunidad (avatar)
+      final communityData = communityDoc.data() as Map<String, dynamic>?;
+      if (communityData != null && communityData.containsKey('imageUrl')) {
+        String? imageUrl = communityData['imageUrl'] as String?;
+        if (imageUrl != null && imageUrl.isNotEmpty) {
+          print('Borrando imagen de comunidad: $imageUrl');
+          bool deleted = await _fileUploadService.deleteFileFromStorageByUrl(
+            imageUrl,
+          );
+          if (deleted) {
+            print('Imagen de comunidad borrada exitosamente.');
+          } else {
+            print(
+              'No se pudo borrar la imagen de la comunidad o ya no existía.',
+            );
+          }
+        }
+      }
+
+      // 3. Borrar todas las tareas y sus archivos asociados
+      print('Borrando tareas de la comunidad $communityId...');
+      QuerySnapshot tasksSnapshot = await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('tasks')
+          .get();
+
+      final taskService = TaskService();
+      for (DocumentSnapshot taskDoc in tasksSnapshot.docs) {
+        print('Borrando tarea ${taskDoc.id} y sus archivos...');
+        await taskService.deleteTask(communityId, taskDoc.id);
+        print('Tarea ${taskDoc.id} borrada.');
+      }
+      print('Todas las tareas de la comunidad $communityId borradas.');
+
+      // 4. Borrar la subcolección de miembros (opcional, pero buena práctica)
+      print('Borrando miembros de la comunidad $communityId...');
+      QuerySnapshot membersSnapshot = await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('members') // Asumiendo que tienes esta subcolección
+          .get();
+
+      WriteBatch membersBatch = _firestore.batch();
+      for (DocumentSnapshot memberDoc in membersSnapshot.docs) {
+        membersBatch.delete(memberDoc.reference);
+      }
+      await membersBatch.commit();
+      print('Miembros de la comunidad $communityId borrados.');
+
+      // 5. Borrar el documento principal de la comunidad
+      print('Borrando documento principal de la comunidad $communityId...');
+      await _firestore.collection('communities').doc(communityId).delete();
+      print('Comunidad $communityId borrada completamente.');
+    } catch (e) {
+      print('Error al borrar la comunidad $communityId: $e');
+      // Podrías lanzar una excepción más específica o manejar el error como prefieras
+      throw Exception('No se pudo eliminar la comunidad por completo: $e');
+    }
+  }
+
+  Widget _buildCommunityImageSelector(ThemeData theme) {
+    Widget imageToShow;
+    // Ya no mostramos _pickedImageFile directamente, porque se sube al seleccionar
+    // Solo mostramos _currentNetworkImageUrl
+    if (_currentNetworkImageUrl != null &&
+        _currentNetworkImageUrl!.isNotEmpty) {
+      imageToShow = CachedNetworkImage(
+        imageUrl: _currentNetworkImageUrl!,
+        width: 120,
+        height: 120,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          width: 120,
+          height: 120,
+          color: theme.colorScheme.surfaceVariant,
+          child: Center(
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: 120,
+          height: 120,
+          color: theme.colorScheme.errorContainer,
+          child: Icon(
+            Icons.broken_image_outlined,
+            color: theme.colorScheme.onErrorContainer,
+            size: 40,
+          ),
+        ),
+      );
+    } else {
+      imageToShow = Container(
+        width: 120,
+        height: 120,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(60),
+          border: Border.all(color: theme.colorScheme.outlineVariant, width: 1),
+        ),
+        child: Icon(
+          Icons.group_add_outlined,
+          size: 50,
+          color: theme.colorScheme.onSecondaryContainer,
+        ),
+      );
+    }
+
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: theme.colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            Text(
+              "Imagen de la Comunidad",
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(60),
+              child: imageToShow,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                OutlinedButton.icon(
+                  icon: Icon(
+                    Icons.photo_library_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  label: Text(
+                    "Galería",
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                  onPressed: _isLoading
+                      ? null
+                      : () =>
+                            _handleImageSelectionAndUpload(ImageSource.gallery),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  icon: Icon(
+                    Icons.camera_alt_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  label: Text(
+                    "Cámara",
+                    style: TextStyle(color: theme.colorScheme.primary),
+                  ),
+                  onPressed: _isLoading
+                      ? null
+                      : () =>
+                            _handleImageSelectionAndUpload(ImageSource.camera),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildSettingItem({
+  Widget _buildSettingCard({
     required BuildContext context,
     required String title,
     required String subtitle,
     IconData? icon,
     VoidCallback? onTap,
     Widget? trailingWidget,
+    Color? iconColor,
+    Color? titleColor,
+    bool isDestructive = false,
   }) {
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 72.0),
+    return Card(
+      elevation: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: isDestructive
+          ? theme.colorScheme.errorContainer.withOpacity(0.15)
+          : theme.colorScheme.surface.withValues(alpha: 0.5),
+      child: InkWell(
+        onTap: _isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (icon != null)
+              if (icon != null) ...[
                 Container(
-                  width: 48,
-                  height: 48,
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8.0),
+                    color:
+                        (iconColor ??
+                                (isDestructive
+                                    ? theme.colorScheme.error
+                                    : theme.colorScheme.primary))
+                            .withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     icon,
-                    color: theme.colorScheme.onSurface,
-                    size: 24,
+                    color:
+                        iconColor ??
+                        (isDestructive
+                            ? theme.colorScheme.error
+                            : theme.colorScheme.primary),
+                    size: 22,
                   ),
                 ),
-              const SizedBox(width: 16),
+                const SizedBox(width: 16),
+              ],
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                      style: theme.textTheme.titleSmall?.copyWith(
                         fontFamily: fontFamilyPrimary,
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onBackground,
+                        fontWeight: FontWeight.w600,
+                        color:
+                            titleColor ??
+                            (isDestructive
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurface),
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
                     ),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontFamily: fontFamilyPrimary,
-                        color: theme.colorScheme.primary,
-                        fontSize: 14,
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: fontFamilyPrimary,
+                          color: isDestructive
+                              ? theme.colorScheme.onErrorContainer.withOpacity(
+                                  0.8,
+                                )
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 2,
-                    ),
+                    ],
                   ],
                 ),
               ),
-              if (trailingWidget != null) trailingWidget,
+              if (trailingWidget != null) ...[
+                const SizedBox(width: 8),
+                trailingWidget,
+              ],
             ],
           ),
         ),
@@ -476,309 +1098,47 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen> {
     );
   }
 
-  Widget _buildImageSelector(BuildContext context, ThemeData theme) {
-    return Column(
-      children: [
-        // Header con botón de expandir/contraer
-        _buildSettingItem(
-          context: context,
-          icon: Icons.image,
-          title: 'Imagen de la comunidad',
-          subtitle: 'Cambiar foto de perfil del grupo',
-          trailingWidget: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                onPressed: _updateCommunityImage,
-                icon: Icon(Icons.save, color: theme.colorScheme.primary),
-              ),
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isImageExpanded = !_isImageExpanded;
-                  });
-                },
-                icon: Icon(
-                  _isImageExpanded ? Icons.expand_less : Icons.expand_more,
-                  color: theme.colorScheme.secondary,
+  Widget _buildLoadingOverlay() {
+    if (!_isLoading) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Positioned.fill(
+      child: Container(
+        color: (theme.colorScheme.scrim ?? Colors.black).withOpacity(
+          0.35,
+        ), // Usar scrim con fallback
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: (theme.colorScheme.shadow ?? Colors.black).withOpacity(
+                    0.1,
+                  ),
+                  blurRadius: 8,
+                  spreadRadius: 2,
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // Contenido expandible
-        if (_isImageExpanded) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              ],
+            ), // Usar shadow con fallback
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Toggle entre opciones
-                Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _useCustomUrl = false;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: !_useCustomUrl
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                bottomLeft: Radius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'Predefinidas',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: fontFamilyPrimary,
-                                fontWeight: FontWeight.w600,
-                                color: !_useCustomUrl
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _useCustomUrl = true;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: _useCustomUrl
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(12),
-                                bottomRight: Radius.circular(12),
-                              ),
-                            ),
-                            child: Text(
-                              'URL personalizada',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: fontFamilyPrimary,
-                                fontWeight: FontWeight.w600,
-                                color: _useCustomUrl
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSurface.withOpacity(
-                                        0.7,
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                CircularProgressIndicator(color: theme.colorScheme.primary),
+                const SizedBox(height: 16),
+                Text(
+                  "Procesando...",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
-
-                // Contenido según la selección
-                if (!_useCustomUrl) ...[
-                  // Selector de avatares predefinidos
-                  Container(
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.all(12),
-                      itemCount: _communityAvatars.length,
-                      itemBuilder: (context, index) {
-                        final isSelected = _selectedAvatarIndex == index;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedAvatarIndex = index;
-                            });
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 12),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : Colors.transparent,
-                                width: 2,
-                              ),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                _communityAvatars[index],
-                                width: 70,
-                                height: 70,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 70,
-                                    height: 70,
-                                    color: theme.colorScheme.outline
-                                        .withOpacity(0.2),
-                                    child: Icon(
-                                      Icons.group,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ] else ...[
-                  // Campo para URL personalizada
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    child: TextField(
-                      controller: _customImageUrlController,
-                      style: TextStyle(
-                        fontFamily: fontFamilyPrimary,
-                        fontSize: 14,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'URL de la imagen',
-                        labelStyle: TextStyle(
-                          fontFamily: fontFamilyPrimary,
-                          color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        hintText: 'https://ejemplo.com/imagen.jpg',
-                        hintStyle: TextStyle(
-                          fontFamily: fontFamilyPrimary,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
-                        ),
-                        prefixIcon: Icon(
-                          Icons.link,
-                          color: theme.colorScheme.primary,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.all(16),
-                      ),
-                      onChanged: (value) {
-                        setState(() {});
-                      },
-                    ),
-                  ),
-
-                  // Vista previa de la imagen personalizada
-                  if (_customImageUrlController.text.trim().isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Vista previa:',
-                            style: TextStyle(
-                              fontFamily: fontFamilyPrimary,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.7,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _customImageUrlController.text.trim(),
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.error.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: theme.colorScheme.error
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: theme.colorScheme.error,
-                                        size: 20,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Error',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: theme.colorScheme.error,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-                const SizedBox(height: 16),
               ],
             ),
           ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 
@@ -787,394 +1147,630 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildSectionHeader(context, "General"),
-
-                    // Campo de nombre de la comunidad
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          hintText: 'Nombre de la Comunidad',
-                          hintStyle: theme.inputDecorationTheme.hintStyle,
-                          filled: true,
-                          fillColor: theme.colorScheme.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      body: Stack(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: StreamBuilder<DocumentSnapshot>(
+                stream: _communityStream,
+                builder: (context, communitySnapshot) {
+                  if (communitySnapshot.connectionState ==
+                          ConnectionState.waiting &&
+                      _currentNetworkImageUrl == null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            strokeWidth: 3,
+                            color: theme.colorScheme.primary,
                           ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              Icons.save,
-                              color: theme.colorScheme.primary,
+                          const SizedBox(height: 16),
+                          Text(
+                            'Cargando configuración...',
+                            style: TextStyle(
+                              fontFamily: fontFamilyPrimary,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
-                            onPressed: _updateCommunityName,
                           ),
-                        ),
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontFamily: fontFamilyPrimary,
-                        ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Campo de descripción
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: TextField(
-                        controller: _descriptionController,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          hintText: 'Descripción de la comunidad',
-                          hintStyle: theme.inputDecorationTheme.hintStyle,
-                          filled: true,
-                          fillColor: theme.colorScheme.surface,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              Icons.save,
-                              color: theme.colorScheme.primary,
-                            ),
-                            onPressed: _updateCommunityDescription,
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: theme.colorScheme.onSurface,
-                          fontFamily: fontFamilyPrimary,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Información de creación
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: _communityStream,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData && snapshot.data!.exists) {
-                          final Map<String, dynamic> communityData =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          final Timestamp? createdAt =
-                              communityData['createdAt'] as Timestamp?;
-                          final String createdByName =
-                              communityData['createdByName'] ?? 'Desconocido';
-
-                          if (createdAt != null) {
-                            final DateTime creationDate = createdAt.toDate();
-                            final String formattedDate = DateFormat(
-                              'dd/MM/yyyy \'a las\' HH:mm',
-                            ).format(creationDate);
-                            final Duration timeSince = DateTime.now()
-                                .difference(creationDate);
-
-                            String timeAgo;
-                            if (timeSince.inDays > 365) {
-                              final years = (timeSince.inDays / 365).floor();
-                              timeAgo =
-                                  'hace ${years} año${years > 1 ? 's' : ''}';
-                            } else if (timeSince.inDays > 30) {
-                              final months = (timeSince.inDays / 30).floor();
-                              timeAgo =
-                                  'hace ${months} mes${months > 1 ? 'es' : ''}';
-                            } else if (timeSince.inDays > 0) {
-                              timeAgo =
-                                  'hace ${timeSince.inDays} día${timeSince.inDays > 1 ? 's' : ''}';
-                            } else if (timeSince.inHours > 0) {
-                              timeAgo =
-                                  'hace ${timeSince.inHours} hora${timeSince.inHours > 1 ? 's' : ''}';
-                            } else if (timeSince.inMinutes > 0) {
-                              timeAgo =
-                                  'hace ${timeSince.inMinutes} minuto${timeSince.inMinutes > 1 ? 's' : ''}';
-                            } else {
-                              timeAgo = 'hace unos momentos';
-                            }
-
-                            return _buildSettingItem(
-                              context: context,
-                              icon: Icons.schedule,
-                              title: 'Creada $timeAgo',
-                              subtitle: 'El $formattedDate por $createdByName',
-                            );
-                          }
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-
-                    // Selector de imagen
-                    _buildImageSelector(context, theme),
-
-                    _buildSectionHeader(context, "Invitaciones"),
-                    // Código de unión
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: _communityStream,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return _buildSettingItem(
-                            context: context,
-                            icon: Icons.error_outline,
-                            title: 'Error',
-                            subtitle: 'Error al cargar el código de unión',
-                          );
-                        }
-                        if (!snapshot.hasData || !snapshot.data!.exists) {
-                          return _buildSettingItem(
-                            context: context,
-                            icon: Icons.info_outline,
-                            title: 'Sin Datos',
-                            subtitle: 'Datos de la comunidad no encontrados',
-                          );
-                        }
-
-                        final Map<String, dynamic> communityData =
-                            snapshot.data!.data() as Map<String, dynamic>;
-                        final String joinCode =
-                            communityData['joinCode'] as String? ?? 'N/D';
-
-                        return _buildSettingItem(
-                          context: context,
-                          icon: Icons.qr_code,
-                          title: joinCode == 'N/D' || joinCode.isEmpty
-                              ? 'Generar Código'
-                              : joinCode,
-                          subtitle: joinCode == 'N/D' || joinCode.isEmpty
-                              ? 'Genera uno nuevo para invitar'
-                              : 'Comparte este código para invitar',
-                          trailingWidget: Row(
+                    );
+                  }
+                  if (!communitySnapshot.hasData ||
+                      !communitySnapshot.data!.exists) {
+                    return Center(
+                      child: Card(
+                        color: theme.colorScheme.surface,
+                        margin: const EdgeInsets.all(16),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                onPressed: () => joinCode != 'N/D'
-                                    ? _copyJoinCode(joinCode)
-                                    : null,
-                                icon: Icon(
-                                  Icons.copy,
-                                  color: theme.colorScheme.secondary,
-                                ),
+                              Icon(
+                                Icons.error_outline,
+                                size: 48,
+                                color: theme.colorScheme.error,
                               ),
-                              IconButton(
-                                onPressed: _generateJoinCode,
-                                icon: Icon(
-                                  Icons.refresh,
-                                  color: theme.colorScheme.secondary,
+                              const SizedBox(height: 16),
+                              Text(
+                                'Comunidad no encontrada.',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onErrorContainer,
                                 ),
-                              ),
+                              ), // onErrorContainer para texto en errorContainer
                             ],
                           ),
-                          onTap: () => joinCode != 'N/D'
-                              ? _copyJoinCode(joinCode)
-                              : null,
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    );
+                  }
 
-                    _buildSectionHeader(context, "Acciones"),
-                    // Botón para salir de la comunidad
-                    _buildSettingItem(
-                      context: context,
-                      icon: Icons.exit_to_app,
-                      title: 'Abandonar Comunidad',
-                      subtitle: 'Salir de esta comunidad',
-                      onTap: _leaveCommunity,
-                    ),
+                  final communityData =
+                      communitySnapshot.data!.data() as Map<String, dynamic>;
+                  final String? currentOwnerId =
+                      communityData['ownerId'] as String?;
+                  final List<String> memberIds = List<String>.from(
+                    communityData['members'] ?? [],
+                  );
+                  final currentUser = FirebaseAuth.instance.currentUser;
+                  final bool isCurrentUserOwner =
+                      currentUser != null && currentUser.uid == currentOwnerId;
+                  final bool canTransferOwnership =
+                      isCurrentUserOwner && memberIds.length > 1;
 
-                    // Botón para eliminar la comunidad (Solo para propietarios)
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: _communityStream,
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || !snapshot.data!.exists) {
-                          return const SizedBox.shrink();
-                        }
-                        final String? ownerId = snapshot.data!.get('ownerId');
-                        final currentUserUid =
-                            FirebaseAuth.instance.currentUser?.uid;
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      bool REdibujar = false;
+                      if (_nameController.text !=
+                          (communityData['name'] ?? widget.communityName)) {
+                        _nameController.text =
+                            communityData['name'] ?? widget.communityName;
+                        widget.communityName = _nameController.text;
+                        REdibujar = true;
+                      }
+                      if (_descriptionController.text !=
+                          (communityData['description'] ?? '')) {
+                        _descriptionController.text =
+                            communityData['description'] ?? '';
+                        REdibujar = true;
+                      }
+                      final newNetworkImageUrl =
+                          communityData['imageUrl'] as String?;
+                      if (_currentNetworkImageUrl != newNetworkImageUrl) {
+                        _currentNetworkImageUrl = newNetworkImageUrl;
+                        REdibujar = true;
+                      }
+                      if (REdibujar && mounted) setState(() {});
+                    }
+                  });
 
-                        if (ownerId != null && ownerId == currentUserUid) {
-                          return _buildSettingItem(
-                            context: context,
-                            icon: Icons.delete_forever,
-                            title: 'Eliminar Comunidad',
-                            subtitle:
-                                'Eliminar permanentemente esta comunidad y todos sus datos.',
-                            onTap: _deleteCommunity,
-                          );
-                        }
-                        return const SizedBox.shrink();
-                      },
-                    ),
-
-                    const SizedBox(height: 20),
-                    _buildSectionHeader(context, "Miembros"),
-                    // Lista de miembros (código existente)
-                    StreamBuilder<DocumentSnapshot>(
-                      stream: _communityStream,
-                      builder: (context, communitySnapshot) {
-                        if (communitySnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (communitySnapshot.hasError) {
-                          return Center(
-                            child: Text('Error: ${communitySnapshot.error}'),
-                          );
-                        }
-                        if (!communitySnapshot.hasData ||
-                            !communitySnapshot.data!.exists) {
-                          return const Center(
-                            child: Text('Comunidad no encontrada.'),
-                          );
-                        }
-
-                        final Map<String, dynamic> communityData =
-                            communitySnapshot.data!.data()
-                                as Map<String, dynamic>;
-                        final List<String> memberIds = List<String>.from(
-                          communityData['members'] ?? [],
-                        );
-                        final String? ownerId =
-                            communityData['ownerId'] as String?;
-
-                        if (memberIds.isEmpty) {
-                          return Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              'No hay miembros en esta comunidad aún.',
-                              style: Theme.of(context).textTheme.bodyMedium
-                                  ?.copyWith(
-                                    fontFamily: fontFamilyPrimary,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.secondary,
+                  return CustomScrollView(
+                    slivers: [
+                      SliverAppBar(
+                        pinned: true,
+                        backgroundColor:
+                            theme.appBarTheme.backgroundColor ??
+                            theme.colorScheme.surface, // Fallback a surface
+                        elevation: theme.appBarTheme.elevation ?? 0.5,
+                        surfaceTintColor: Colors.transparent,
+                        leading: IconButton(
+                          icon: Icon(
+                            Icons.arrow_back_ios_new,
+                            color:
+                                theme.appBarTheme.foregroundColor ??
+                                theme.colorScheme.onSurface,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                          tooltip: 'Regresar',
+                        ),
+                        centerTitle: true, // Centrar título
+                        title: Text(
+                          widget.communityName,
+                          style:
+                              theme.appBarTheme.titleTextStyle ??
+                              TextStyle(
+                                fontFamily: fontFamilyPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 20,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                        ),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            // Card para Nombre
+                            Card(
+                              elevation: 1,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 6.0,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              color: theme.colorScheme.surface,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  16,
+                                  16,
+                                  8,
+                                ),
+                                child: TextField(
+                                  controller: _nameController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Nombre Comunidad',
+                                    hintStyle:
+                                        theme.inputDecorationTheme.hintStyle,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    filled: true,
+                                    fillColor:
+                                        theme.inputDecorationTheme.fillColor,
+                                    suffixIcon: _isLoading
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          )
+                                        : IconButton(
+                                            icon: Icon(
+                                              Icons.save_outlined,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            onPressed: _updateCommunityName,
+                                            tooltip: "Guardar nombre",
+                                          ),
                                   ),
+                                  style: TextStyle(
+                                    fontFamily: fontFamilyPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
                             ),
-                          );
-                        }
-
-                        return FutureBuilder<List<DocumentSnapshot>>(
-                          future: FirebaseFirestore.instance
-                              .collection('users')
-                              .where(FieldPath.documentId, whereIn: memberIds)
-                              .get()
-                              .then((querySnapshot) => querySnapshot.docs),
-                          builder: (context, userSnapshot) {
-                            if (userSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Center(
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            if (userSnapshot.hasError) {
-                              return Center(
-                                child: Text(
-                                  'Error cargando miembros: ${userSnapshot.error}',
+                            // Card para Descripción
+                            Card(
+                              elevation: 1,
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 6.0,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              color: theme.colorScheme.surface,
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  16,
+                                  16,
+                                  8,
                                 ),
-                              );
-                            }
-                            if (!userSnapshot.hasData ||
-                                userSnapshot.data!.isEmpty) {
-                              return const Center(
-                                child: Text(
-                                  'No se encontraron datos de usuario para los miembros.',
+                                child: TextField(
+                                  controller: _descriptionController,
+                                  maxLines: 3,
+                                  decoration: InputDecoration(
+                                    labelText: 'Descripción',
+                                    hintStyle:
+                                        theme.inputDecorationTheme.hintStyle,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    filled: true,
+                                    fillColor:
+                                        theme.inputDecorationTheme.fillColor,
+                                    suffixIcon: _isLoading
+                                        ? const Padding(
+                                            padding: EdgeInsets.all(12.0),
+                                            child: SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            ),
+                                          )
+                                        : IconButton(
+                                            icon: Icon(
+                                              Icons.save_outlined,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                            onPressed:
+                                                _updateCommunityDescription,
+                                            tooltip: "Guardar descripción",
+                                          ),
+                                  ),
+                                  style: TextStyle(
+                                    fontFamily: fontFamilyPrimary,
+                                    fontWeight: FontWeight.w500,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
                                 ),
-                              );
-                            }
-
-                            final Map<String, Map<String, dynamic>>
-                            userDataMap = {};
-                            for (var doc in userSnapshot.data!) {
-                              if (doc.exists) {
-                                userDataMap[doc.id] =
-                                    doc.data() as Map<String, dynamic>;
-                              }
-                            }
-
-                            memberIds.sort((a, b) {
-                              if (a == ownerId) return -1;
-                              if (b == ownerId) return 1;
-                              final nameA =
-                                  userDataMap[a]?['name'] ??
-                                  userDataMap[a]?['displayName'] ??
-                                  '';
-                              final nameB =
-                                  userDataMap[b]?['name'] ??
-                                  userDataMap[b]?['displayName'] ??
-                                  '';
-                              return nameA.toLowerCase().compareTo(
-                                nameB.toLowerCase(),
-                              );
-                            });
-
-                            return ListView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: memberIds.length,
-                              itemBuilder: (context, index) {
-                                final memberId = memberIds[index];
-                                final userData = userDataMap[memberId];
-                                final String userName =
-                                    userData?['name'] ??
-                                    userData?['displayName'] ??
-                                    'Usuario Desconocido';
-                                final String? userPhotoUrl =
-                                    userData?['photoURL'];
-                                final bool isOwner = memberId == ownerId;
-                                final bool isCurrentUser =
-                                    memberId ==
-                                    FirebaseAuth.instance.currentUser?.uid;
-
-                                return _buildSettingItem(
+                              ),
+                            ),
+                            Builder(
+                              builder: (context) {
+                                final Timestamp? createdAt =
+                                    communityData['createdAt'] as Timestamp?;
+                                final String createdByName =
+                                    communityData['createdByName'] ??
+                                    'Desconocido';
+                                if (createdAt == null)
+                                  return const SizedBox.shrink();
+                                final String formattedDate = DateFormat(
+                                  'dd MMM yyyy, HH:mm',
+                                  Localizations.localeOf(context).toString(),
+                                ).format(createdAt.toDate());
+                                return _buildSettingCard(
                                   context: context,
-                                  title:
-                                      userName + (isCurrentUser ? ' (Tú)' : ''),
-                                  subtitle: isOwner ? 'Propietario' : 'Miembro',
-                                  trailingWidget:
-                                      userPhotoUrl != null &&
-                                          userPhotoUrl.isNotEmpty
-                                      ? CircleAvatar(
-                                          backgroundImage: NetworkImage(
-                                            userPhotoUrl,
-                                          ),
-                                          radius: 20,
-                                        )
-                                      : CircleAvatar(
-                                          backgroundColor: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withOpacity(0.1),
-                                          child: Icon(
-                                            Icons.person,
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                          ),
-                                        ),
-                                  onTap: () {
-                                    // Opcional: Navegar al perfil de usuario
-                                  },
+                                  icon: Icons.history_edu_outlined,
+                                  title: 'Creada por $createdByName',
+                                  subtitle: formattedDate,
+                                  iconColor: theme.colorScheme.secondary,
                                 );
                               },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                            ),
+                            _buildCommunityImageSelector(theme),
+                            _buildSettingCard(
+                              context: context,
+                              icon: Icons.qr_code_scanner_outlined,
+                              title:
+                                  communityData['joinCode'] as String? ?? 'N/D',
+                              subtitle: 'Código para unirse',
+                              iconColor: theme.colorScheme.secondary,
+                              trailingWidget: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.copy_all_outlined,
+                                      color: theme.colorScheme.secondary,
+                                    ),
+                                    onPressed:
+                                        communityData['joinCode'] != null &&
+                                            !_isLoading
+                                        ? () => _copyJoinCode(
+                                            communityData['joinCode'],
+                                          )
+                                        : null,
+                                    tooltip: "Copiar",
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.refresh_rounded,
+                                      color: theme.colorScheme.secondary,
+                                    ),
+                                    onPressed: _isLoading
+                                        ? null
+                                        : _generateJoinCode,
+                                    tooltip: "Nuevo Código",
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (canTransferOwnership)
+                              _buildSettingCard(
+                                context: context,
+                                icon: Icons.admin_panel_settings_outlined,
+                                title: 'Transferir propiedad',
+                                subtitle: 'Asignar nuevo propietario',
+                                onTap: _showTransferOwnershipDialog,
+                                iconColor: theme.colorScheme.tertiary,
+                              ),
+                            if (currentUser != null &&
+                                memberIds.contains(currentUser.uid))
+                              _buildSettingCard(
+                                context: context,
+                                icon: Icons.exit_to_app_rounded,
+                                title: 'Abandonar Comunidad',
+                                subtitle:
+                                    isCurrentUserOwner && memberIds.length > 1
+                                    ? 'Asignar nuevo propietario primero'
+                                    : 'Salir de esta comunidad',
+                                onTap: _leaveCommunity,
+                                isDestructive: true,
+                              ),
+                            if (isCurrentUserOwner)
+                              _buildSettingCard(
+                                context: context,
+                                icon: Icons.delete_sweep_outlined,
+                                title: 'Eliminar Comunidad',
+                                subtitle: 'Acción irreversible',
+                                onTap: _deleteCommunity,
+                                isDestructive: true,
+                              ),
+
+                            FutureBuilder<List<DocumentSnapshot>>(
+                              future: memberIds.isNotEmpty
+                                  ? FirebaseFirestore.instance
+                                        .collection('users')
+                                        .where(
+                                          FieldPath.documentId,
+                                          whereIn: memberIds,
+                                        )
+                                        .get()
+                                        .then((snap) => snap.docs)
+                                  : Future.value([]),
+                              builder: (context, userSnapshot) {
+                                if (userSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return Card(
+                                    elevation: 1,
+                                    color: theme.colorScheme.surface,
+                                    margin: const EdgeInsets.all(16),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        children: [
+                                          CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Cargando miembros...',
+                                            style: TextStyle(
+                                              fontFamily: fontFamilyPrimary,
+                                              color: theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (userSnapshot.hasError ||
+                                    (!userSnapshot.hasData &&
+                                        memberIds.isNotEmpty) ||
+                                    (userSnapshot.data?.isEmpty ??
+                                        true && memberIds.isNotEmpty)) {
+                                  return Card(
+                                    elevation: 1,
+                                    margin: const EdgeInsets.all(16),
+                                    color: theme.colorScheme.errorContainer
+                                        .withOpacity(0.3),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline,
+                                            color: theme.colorScheme.error,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Error cargando miembros.',
+                                              style: TextStyle(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onErrorContainer,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                if (memberIds.isEmpty) {
+                                  return Card(
+                                    elevation: 1,
+                                    color: theme.colorScheme.surface,
+                                    margin: const EdgeInsets.all(16),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.people_outline,
+                                            size: 40,
+                                            color: theme.colorScheme.outline,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Aún no hay miembros.',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color:
+                                                      theme.colorScheme.outline,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final Map<String, Map<String, dynamic>>
+                                userDataMap = {
+                                  for (var doc in userSnapshot.data!)
+                                    if (doc.exists)
+                                      doc.id:
+                                          doc.data() as Map<String, dynamic>,
+                                };
+                                List<String> sortedMemberIds = List.from(
+                                  memberIds,
+                                );
+                                sortedMemberIds.sort((a, b) {
+                                  if (a == currentOwnerId) return -1;
+                                  if (b == currentOwnerId) return 1;
+                                  final nameA =
+                                      userDataMap[a]?['name']
+                                          ?.toString()
+                                          .toLowerCase() ??
+                                      userDataMap[a]?['displayName']
+                                          ?.toString()
+                                          .toLowerCase() ??
+                                      '';
+                                  final nameB =
+                                      userDataMap[b]?['name']
+                                          ?.toString()
+                                          .toLowerCase() ??
+                                      userDataMap[b]?['displayName']
+                                          ?.toString()
+                                          .toLowerCase() ??
+                                      '';
+                                  return nameA.compareTo(nameB);
+                                });
+                                return Card(
+                                  elevation: 1,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 6,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  color: theme.colorScheme.surface,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                          16,
+                                          16,
+                                          16,
+                                          8,
+                                        ),
+                                        child: Text(
+                                          "Miembros (${sortedMemberIds.length})",
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                fontFamily: fontFamilyPrimary,
+                                                fontWeight: FontWeight.bold,
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                              ),
+                                        ),
+                                      ),
+                                      ListView.separated(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: sortedMemberIds.length,
+                                        separatorBuilder: (context, index) =>
+                                            Divider(
+                                              height: 1,
+                                              indent: 72,
+                                              color: theme
+                                                  .colorScheme
+                                                  .outlineVariant
+                                                  .withOpacity(0.2),
+                                            ),
+                                        itemBuilder: (context, index) {
+                                          final memberId =
+                                              sortedMemberIds[index];
+                                          final userData =
+                                              userDataMap[memberId];
+                                          final String userName =
+                                              userData?['name'] ??
+                                              userData?['displayName'] ??
+                                              'Usuario';
+                                          final String? userPhotoUrl =
+                                              userData?['photoURL'];
+                                          final bool isOwner =
+                                              memberId == currentOwnerId;
+                                          final bool isSelf =
+                                              memberId == currentUser?.uid;
+                                          return ListTile(
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8,
+                                                ),
+                                            leading: CircleAvatar(
+                                              radius: 22,
+                                              backgroundImage:
+                                                  userPhotoUrl != null &&
+                                                      userPhotoUrl.isNotEmpty
+                                                  ? CachedNetworkImageProvider(
+                                                      userPhotoUrl,
+                                                    )
+                                                  : null,
+                                              backgroundColor: theme
+                                                  .colorScheme
+                                                  .surfaceVariant,
+                                              child:
+                                                  (userPhotoUrl == null ||
+                                                      userPhotoUrl.isEmpty)
+                                                  ? Icon(
+                                                      Icons.person_outline,
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    )
+                                                  : null,
+                                            ),
+                                            title: Text(
+                                              '$userName ${isSelf ? "(Tú)" : ""}',
+                                              style: TextStyle(
+                                                fontFamily: fontFamilyPrimary,
+                                                fontWeight: isOwner
+                                                    ? FontWeight.bold
+                                                    : FontWeight.w500,
+                                                color:
+                                                    theme.colorScheme.onSurface,
+                                              ),
+                                            ),
+                                            subtitle: Text(
+                                              isOwner
+                                                  ? 'Propietario'
+                                                  : 'Miembro',
+                                              style: TextStyle(
+                                                fontFamily: fontFamilyPrimary,
+                                                fontSize: 12,
+                                                color: isOwner
+                                                    ? theme.colorScheme.primary
+                                                    : theme
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                              ),
+                                            ),
+                                            trailing: isOwner
+                                                ? Icon(
+                                                    Icons.star_rounded,
+                                                    color:
+                                                        Colors.amber.shade600,
+                                                    size: 20,
+                                                  )
+                                                : null,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                          ]),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

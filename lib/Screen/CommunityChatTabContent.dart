@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 import 'package:classroom_mejorado/theme/app_typography.dart';
+import 'package:classroom_mejorado/services/firebase_notification_service.dart'; // *** AÑADIDO ***
 
 class CommunityChatTabContent extends StatefulWidget {
   final String communityId;
@@ -19,12 +20,16 @@ class CommunityChatTabContent extends StatefulWidget {
 class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FirebaseNotificationService _notificationService =
+      FirebaseNotificationService(); // *** AÑADIDO ***
 
   @override
   void initState() {
     super.initState();
-    // Asegurarse de que el scroll esté al final al iniciar (si hay mensajes)
+
+    // *** LIMPIAR NOTIFICACIONES AL ABRIR EL CHAT ***
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _notificationService.clearChatNotifications(widget.communityId);
       _scrollToBottom();
     });
   }
@@ -59,8 +64,8 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
         .add({
           'text': _messageController.text.trim(),
           'senderId': user.uid,
-          'senderUser': user.displayName,
-          'senderPhotoURL': user.photoURL, // Agregamos la foto del usuario
+          'senderUser': user.displayName ?? 'Usuario', // *** CORREGIDO ***
+          'senderPhotoURL': user.photoURL,
           'timestamp': FieldValue.serverTimestamp(),
         });
 
@@ -172,7 +177,9 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
                 Container(
                   decoration: BoxDecoration(
                     color: isMe
-                        ? theme.colorScheme.primary.withValues(alpha: 0.4)
+                        ? theme.colorScheme.primary.withOpacity(
+                            0.4,
+                          ) // *** CORREGIDO withOpacity ***
                         : theme.colorScheme.surface,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(12),
@@ -245,7 +252,7 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
             const SizedBox(width: 8),
             _buildUserAvatar(
               currentUser?.photoURL,
-              currentUser?.displayName ?? '',
+              currentUser?.displayName ?? currentUser?.email ?? '',
               theme,
             ),
           ],
@@ -259,131 +266,140 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
     final theme = Theme.of(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    return Column(
-      children: [
-        // Usamos StreamBuilder para escuchar los mensajes de Firestore en tiempo real
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('communities')
-                .doc(widget.communityId)
-                .collection('messages')
-                .orderBy('timestamp', descending: false)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(
-                  child: CircularProgressIndicator(
-                    color: theme.colorScheme.primary,
-                  ),
+    // *** SOLUCIÓN: Envolver todo en Scaffold ***
+    return Scaffold(
+      body: Column(
+        children: [
+          // Usamos StreamBuilder para escuchar los mensajes de Firestore en tiempo real
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('communities')
+                  .doc(widget.communityId)
+                  .collection('messages')
+                  .orderBy('timestamp', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: theme.colorScheme.primary,
+                    ),
+                  );
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}',
+                      style: TextStyle(color: theme.colorScheme.error),
+                    ),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      '¡Aún no hay mensajes!',
+                      style: TextStyle(
+                        color: theme.colorScheme.onBackground.withOpacity(0.7),
+                      ),
+                    ),
+                  );
+                }
+
+                final messages = snapshot.data!.docs;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _scrollToBottom();
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    return _buildMessageBubble(
+                      context,
+                      messages[index],
+                      currentUser,
+                    );
+                  },
                 );
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Error: ${snapshot.error}',
-                    style: TextStyle(color: theme.colorScheme.error),
-                  ),
-                );
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return Center(
-                  child: Text(
-                    '¡Aún no hay mensajes!',
-                    style: TextStyle(
-                      color: theme.colorScheme.onBackground.withOpacity(0.7),
+              },
+            ),
+          ),
+
+          // Barra de entrada de mensajes
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
+            color: theme.scaffoldBackgroundColor,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(24.0),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _messageController,
+                            maxLines: 5, // Máximo 5 líneas
+                            minLines: 1, // Mínimo 1 línea
+                            textInputAction: TextInputAction.newline,
+                            decoration: InputDecoration(
+                              hintText: 'Mensaje',
+                              hintStyle: theme.inputDecorationTheme.hintStyle
+                                  ?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16.0,
+                                vertical: 14.0,
+                              ),
+                              fillColor: Colors.transparent,
+                              filled: true,
+                            ),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontFamily: fontFamilyPrimary,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            right: 4.0,
+                            bottom: 4.0,
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.send,
+                              color: theme.colorScheme.primary,
+                            ),
+                            onPressed: _sendMessage,
+                            constraints: const BoxConstraints(
+                              minWidth: 40,
+                              minHeight: 40,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }
-
-              final messages = snapshot.data!.docs;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _scrollToBottom();
-              });
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(12),
-                itemCount: messages.length,
-                itemBuilder: (context, index) {
-                  return _buildMessageBubble(
-                    context,
-                    messages[index],
-                    currentUser,
-                  );
-                },
-              );
-            },
-          ),
-        ),
-
-        // Barra de entrada de mensajes
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          color: theme.scaffoldBackgroundColor,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(24.0),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          maxLines: 5, // Máximo 5 líneas
-                          minLines: 1, // Mínimo 1 línea
-                          textInputAction: TextInputAction.newline,
-                          decoration: InputDecoration(
-                            hintText: 'Mensaje',
-                            hintStyle: theme.inputDecorationTheme.hintStyle
-                                ?.copyWith(
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.6),
-                                ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 14.0,
-                            ),
-                            fillColor: Colors.transparent,
-                            filled: true,
-                          ),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontFamily: fontFamilyPrimary,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                          onSubmitted: (_) => _sendMessage(),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4.0, bottom: 4.0),
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.send,
-                            color: theme.colorScheme.primary,
-                          ),
-                          onPressed: _sendMessage,
-                          constraints: const BoxConstraints(
-                            minWidth: 40,
-                            minHeight: 40,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

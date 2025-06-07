@@ -1,83 +1,11 @@
-// lib/screen/MyTasksScreen.dart
+// lib/screen/MyTasksScreen.dart - REFACTORIZADO CON TaskUtils
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
 import 'package:classroom_mejorado/Screen/TaskDetailScreen.dart';
-
-enum TaskPriority { low, medium, high, urgent }
-
-extension TaskPriorityExtension on TaskPriority {
-  String get name {
-    switch (this) {
-      case TaskPriority.low:
-        return 'Baja';
-      case TaskPriority.medium:
-        return 'Media';
-      case TaskPriority.high:
-        return 'Alta';
-      case TaskPriority.urgent:
-        return 'Urgente';
-    }
-  }
-
-  Color getColor() {
-    switch (this) {
-      case TaskPriority.low:
-        return Colors.green[600]!;
-      case TaskPriority.medium:
-        return Colors.blue[600]!;
-      case TaskPriority.high:
-        return Colors.orange[600]!;
-      case TaskPriority.urgent:
-        return Colors.red[600]!;
-    }
-  }
-
-  IconData getIcon() {
-    switch (this) {
-      case TaskPriority.low:
-        return Icons.keyboard_arrow_down;
-      case TaskPriority.medium:
-        return Icons.remove;
-      case TaskPriority.high:
-        return Icons.keyboard_arrow_up;
-      case TaskPriority.urgent:
-        return Icons.priority_high;
-    }
-  }
-}
-
-enum TaskState { toDo, doing, testing, done }
-
-extension TaskStateExtension on TaskState {
-  String get name {
-    switch (this) {
-      case TaskState.toDo:
-        return 'Por hacer';
-      case TaskState.doing:
-        return 'Haciendo';
-      case TaskState.testing:
-        return 'Por revisar';
-      case TaskState.done:
-        return 'Hecho';
-    }
-  }
-
-  Color getColor(BuildContext context) {
-    switch (this) {
-      case TaskState.toDo:
-        return Colors.orange[700]!;
-      case TaskState.doing:
-        return Colors.blue[700]!;
-      case TaskState.testing:
-        return Colors.purple[700]!;
-      case TaskState.done:
-        return Colors.green[700]!;
-    }
-  }
-}
+import 'package:classroom_mejorado/utils/tasks_utils.dart'; // ✅ IMPORT FUNCIONES COMPARTIDAS
 
 class MyTasksScreen extends StatefulWidget {
   const MyTasksScreen({super.key});
@@ -281,17 +209,14 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                   'Comunidad Desconocida';
               final String taskId = taskDoc.id;
 
-              final TaskState taskState = TaskState.values.firstWhere(
-                (e) =>
-                    e.name.toLowerCase() ==
-                    (taskData['state'] as String? ?? 'toDo').toLowerCase(),
-                orElse: () => TaskState.toDo,
+              // ✅ USAR FUNCIÓN COMPARTIDA DE TaskUtils
+              final TaskState taskState = TaskUtils.parseTaskState(
+                taskData['state'] as String?,
               );
 
-              final String priority = taskData['priority'] ?? 'Media';
-              final TaskPriority taskPriority = TaskPriority.values.firstWhere(
-                (e) => e.name.toLowerCase() == priority.toLowerCase(),
-                orElse: () => TaskPriority.medium,
+              // ✅ USAR FUNCIÓN COMPARTIDA DE TaskUtils PARA PRIORIDAD
+              final TaskPriority taskPriority = TaskUtils.parseTaskPriority(
+                taskData['priority'] as String?,
               );
 
               final Timestamp? dueDateTimestamp =
@@ -362,7 +287,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    priority,
+                                    taskPriority.name, // ✅ USAR NOMBRE DEL ENUM
                                     style: TextStyle(
                                       fontFamily: fontFamilyPrimary,
                                       fontSize: 12,
@@ -441,7 +366,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                                 ),
                               ),
                               child: Text(
-                                taskState.name,
+                                taskState.name, // ✅ USAR NOMBRE DEL ENUM
                                 style: TextStyle(
                                   fontFamily: fontFamilyPrimary,
                                   fontSize: 12,

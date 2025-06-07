@@ -1,9 +1,9 @@
 // lib/screen/AuthScreen.dart (o donde tengas este archivo)
 
 import 'package:classroom_mejorado/Screen/forgot_password_screen.dart';
-import 'package:classroom_mejorado/Widgets/alert_widet.dart';
-import 'package:classroom_mejorado/Widgets/all_required_widget.dart';
-import 'package:classroom_mejorado/Widgets/already_exists_widget.dart';
+import 'package:classroom_mejorado/widgets/alert_widet.dart';
+import 'package:classroom_mejorado/widgets/all_required_widget.dart';
+import 'package:classroom_mejorado/widgets/already_exists_widget.dart';
 import 'package:classroom_mejorado/function/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';

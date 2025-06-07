@@ -1,6 +1,9 @@
 import 'package:classroom_mejorado/Screen/AuthScreen.dart';
+import 'package:classroom_mejorado/Screen/CommunityChatTabContent.dart';
+import 'package:classroom_mejorado/Screen/TaskDetailScreen.dart';
 import 'package:classroom_mejorado/Screen/app_shell.dart';
 import 'package:classroom_mejorado/function/animations.dart';
+import 'package:classroom_mejorado/services/firebase_notification_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,34 +13,39 @@ import 'package:classroom_mejorado/firebase_options.dart';
 import 'package:classroom_mejorado/theme/app_colors.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
 
-// Mantén el GlobalKey
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  final notificationService = FirebaseNotificationService();
+  await notificationService.initNotifications();
+
+  // Solicitar permisos de notificación (para iOS y Android 13+)
+  await FirebaseMessaging.instance.requestPermission(provisional: true);
 
   // Observa los cambios de autenticación
   FirebaseAuth.instance.authStateChanges().listen((User? user) {
     if (user == null) {
       print('User is currently signed out!');
-      navigatorKey.currentState?.pushReplacementNamed('/login');
+      FirebaseNotificationService.navigatorKey.currentState
+          ?.pushReplacementNamed('/login');
     } else {
       print('User is signed in!');
-      navigatorKey.currentState?.pushReplacementNamed('/main');
+      FirebaseNotificationService.navigatorKey.currentState
+          ?.pushReplacementNamed('/main');
       print("Redirigiendo a /main (AppShell)");
     }
   });
 
-  runApp(const MyApp());
+  runApp(MyApp(navigatorKey: FirebaseNotificationService.navigatorKey));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final GlobalKey<NavigatorState> navigatorKey;
+  const MyApp({super.key, required this.navigatorKey});
 
   @override
   Widget build(BuildContext context) {
-    // Define el tema oscuro usando tu paleta de colores (sin cambios)
     final ThemeData appDarkTheme = ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: darkScaffoldBg,
@@ -47,8 +55,7 @@ class MyApp extends StatelessWidget {
         onPrimary: darkPrimaryText,
         secondary: textMediumColor,
         onSecondary: darkPrimaryText,
-        surface:
-            darkElementBackground, // Color para superficies (usado en BottomNavBarBgColor)
+        surface: darkElementBackground,
         onSurface: darkPrimaryText,
         background: darkScaffoldBg,
         onBackground: darkPrimaryText,
@@ -209,30 +216,75 @@ class MyApp extends StatelessWidget {
 
     return MaterialApp(
       title: 'Taskify App',
-      navigatorKey: navigatorKey,
+      navigatorKey: FirebaseNotificationService.navigatorKey,
+      // ***** REGRESA ESTO A CÓMO ESTABA *****
       initialRoute: FirebaseAuth.instance.currentUser != null
           ? '/main'
           : '/login',
+
+      // ************************************
       onGenerateRoute: (settings) {
+        // ***** ELIMINA EL CASE '/' DE AQUÍ *****
+        // if (settings.name == '/') {
+        //   return MaterialPageRoute(
+        //     builder: (_) => Scaffold(
+        //       backgroundColor: darkScaffoldBg,
+        //       body: Center(
+        //         child: Column(
+        //           mainAxisAlignment: MainAxisAlignment.center,
+        //           children: [
+        //             CircularProgressIndicator(color: primaryAccentColor),
+        //             SizedBox(height: 20),
+        //             Text(
+        //               'Cargando...',
+        //               style: TextStyle(color: darkPrimaryText, fontSize: 18),
+        //             ),
+        //           ],
+        //         ),
+        //       ),
+        //     ),
+        //   );
+        // }
+        // *************************************
+
         switch (settings.name) {
           case '/login':
-            return AppAnimations.createFadeThroughWithSymmetricBlurRoute(
-              const AuthScreen(),
-            );
+            return AppAnimations.createModernPushRoute(const AuthScreen());
           case '/main':
-            return AppAnimations.createFadeThroughWithBlurRoute(
-              const AppShell(), // ¡Ahora se navega al AppShell!
-            );
-          default:
-            return MaterialPageRoute(
-              builder: (_) => const Center(
-                child: Text(
-                  'Error: Ruta desconocida. ¡Vuelve a cargar la aplicación!',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            );
+            return AppAnimations.createModernPushRoute(const AppShell());
+          case '/communityChat':
+            final args = settings.arguments as Map<String, dynamic>?;
+            final communityId = args?['communityId'] as String?;
+            if (communityId != null) {
+              return AppAnimations.createSmoothSlideRoute(
+                CommunityChatTabContent(communityId: communityId),
+              );
+            }
+            break;
+          case '/taskDetail':
+            final args = settings.arguments as Map<String, dynamic>?;
+            final communityId = args?['communityId'] as String?;
+            final taskId = args?['taskId'] as String?;
+            if (communityId != null && taskId != null) {
+              return AppAnimations.createFadeThroughWithBlurRoute(
+                TaskDetailScreen(communityId: communityId, taskId: taskId),
+              );
+            }
+            break;
         }
+        // Ruta por defecto para rutas desconocidas (no la raíz)
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            backgroundColor: darkScaffoldBg,
+            body: const Center(
+              child: Text(
+                'Error: Ruta desconocida. ¡Vuelve a cargar la aplicación!',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.redAccent, fontSize: 18),
+              ),
+            ),
+          ),
+        );
       },
       themeMode: ThemeMode.dark,
       darkTheme: appDarkTheme,

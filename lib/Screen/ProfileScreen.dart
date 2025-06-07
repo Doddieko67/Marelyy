@@ -6,6 +6,9 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:classroom_mejorado/services/file_upload_service.dart'; // Importa tu servicio
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,19 +21,21 @@ class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FileUploadService _fileUploadService =
+      FileUploadService(); // Instancia del servicio
 
   late TextEditingController _nameController;
-  late TextEditingController
-  _photoUrlController; // Nuevo controlador para URL de foto
+  late TextEditingController _photoUrlController;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
   bool _isEditingName = false;
-  bool _isEditingPhoto = false; // Nueva variable para editar foto
+  bool _isEditingPhoto = false;
   bool _showEmailToOthers = false;
-  String _currentPhotoUrl = ''; // URL actual de la foto
+  bool _isUploadingPhoto = false; // Para mostrar loading durante subida
+  String _currentPhotoUrl = '';
 
-  // Función para validar URL de imagen (igual que en CreateCommunityScreen)
+  // Función para validar URL de imagen (mantenida para el modo manual)
   bool _isValidImageUrl(String url) {
     if (url.isEmpty) return false;
 
@@ -51,7 +56,122 @@ class _ProfileScreenState extends State<ProfileScreen>
         url.contains('com');
   }
 
-  // ************ Función para actualizar la foto de perfil ************
+  // ************ Nueva función para seleccionar y subir imagen ************
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _isUploadingPhoto = true;
+    });
+
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedImage = await picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
+
+      if (pickedImage == null) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+        return; // Usuario canceló
+      }
+
+      final File imageFile = File(pickedImage.path);
+      final String fileName =
+          '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // Subir imagen usando el servicio
+      final String? downloadUrl = await _fileUploadService.uploadFile(
+        file: imageFile,
+        path: 'profile_pictures', // Ruta específica para fotos de perfil
+        fileName: fileName,
+      );
+
+      if (downloadUrl != null) {
+        await _updateProfilePhotoWithUrl(downloadUrl);
+      } else {
+        throw Exception('Error al subir la imagen');
+      }
+    } catch (e) {
+      print("Error selecting and uploading image: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir la imagen: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingPhoto = false;
+        });
+      }
+    }
+  }
+
+  // ************ Función actualizada para actualizar foto con URL ************
+  Future<void> _updateProfilePhotoWithUrl(String newPhotoUrl) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      // 1. Actualizar la foto en Firebase Authentication
+      await user.updatePhotoURL(newPhotoUrl);
+
+      // 2. Actualizar en Firestore
+      await _firestore.collection('users').doc(user.uid).update({
+        'photoURL': newPhotoUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (mounted) {
+        setState(() {
+          _isEditingPhoto = false;
+          _currentPhotoUrl = newPhotoUrl;
+          _photoUrlController.text = newPhotoUrl;
+        });
+        _animationController.reverse();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✓ Foto de perfil actualizada correctamente'),
+            backgroundColor: Colors.green.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error updating profile photo: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar la foto: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // ************ Función para actualizar foto manual (mantenida) ************
   Future<void> _updateProfilePhoto() async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -89,49 +209,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
 
-    try {
-      // 1. Actualizar la foto en Firebase Authentication
-      await user.updatePhotoURL(newPhotoUrl);
-
-      // 2. Actualizar en Firestore
-      await _firestore.collection('users').doc(user.uid).update({
-        'photoURL': newPhotoUrl,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) {
-        setState(() {
-          _isEditingPhoto = false;
-          _currentPhotoUrl = newPhotoUrl;
-        });
-        _animationController.reverse();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('✓ Foto de perfil actualizada correctamente'),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print("Error updating profile photo: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al actualizar la foto: ${e.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
+    await _updateProfilePhotoWithUrl(newPhotoUrl);
   }
 
   // ************ Función para restaurar foto original de Google ************
@@ -151,32 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
 
       if (originalPhotoUrl != null) {
-        // Actualizar en Firebase Auth
-        await user.updatePhotoURL(originalPhotoUrl);
-
-        // Actualizar en Firestore
-        await _firestore.collection('users').doc(user.uid).update({
-          'photoURL': originalPhotoUrl,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-
-        if (mounted) {
-          setState(() {
-            _currentPhotoUrl = originalPhotoUrl!;
-            _isEditingPhoto = false;
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('✓ Foto restaurada a la original de Google'),
-              backgroundColor: Colors.green.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          );
-        }
+        await _updateProfilePhotoWithUrl(originalPhotoUrl);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -206,6 +259,172 @@ class _ProfileScreenState extends State<ProfileScreen>
         );
       }
     }
+  }
+
+  // ************ Diálogo para seleccionar fuente de imagen ************
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      'Seleccionar imagen',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Botón Cámara
+                    _buildImageSourceOption(
+                      context,
+                      icon: Icons.camera_alt_rounded,
+                      title: 'Tomar foto',
+                      subtitle: 'Usar la cámara',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickAndUploadImage(ImageSource.camera);
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Botón Galería
+                    _buildImageSourceOption(
+                      context,
+                      icon: Icons.photo_library_rounded,
+                      title: 'Seleccionar de galería',
+                      subtitle: 'Elegir una foto existente',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickAndUploadImage(ImageSource.gallery);
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 20),
+
+                    // Botón Cancelar
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildImageSourceOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ************ Función para cerrar sesión ************
@@ -303,48 +522,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   // ************ Función para actualizar la visibilidad del email en Firestore ************
-  Future<void> _updateEmailVisibility(bool newValue) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    try {
-      await _firestore.collection('users').doc(user.uid).set({
-        'showEmailToOthers': newValue,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      if (mounted) {
-        setState(() {
-          _showEmailToOthers = newValue;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✓ Correo ${newValue ? "público" : "privado"}'),
-            backgroundColor: Colors.green.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      print("Error updating email visibility: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-    }
-  }
-
   // ************ Cargar configuración de visibilidad del email ************
   void _loadUserProfileAndSettings() async {
     final user = _auth.currentUser;
@@ -443,8 +620,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _photoUrlController =
-        TextEditingController(); // Inicializar nuevo controlador
+    _photoUrlController = TextEditingController();
     _loadUserProfileAndSettings();
 
     _animationController = AnimationController(
@@ -460,7 +636,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void dispose() {
     _nameController.dispose();
-    _photoUrlController.dispose(); // Dispose del nuevo controlador
+    _photoUrlController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -777,7 +953,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     // Vista normal con foto y botón de editar mejorado
     return Column(
       children: [
-        // Avatar con overlay de edición
+        // Avatar con overlay de edición y estado de carga
         Stack(
           alignment: Alignment.center,
           children: [
@@ -808,35 +984,51 @@ class _ProfileScreenState extends State<ProfileScreen>
                     : _buildDefaultAvatar(theme),
               ),
             ),
-            // Overlay con ícono de cámara
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 40,
-                height: 40,
+
+            // Loading overlay
+            if (_isUploadingPhoto)
+              Container(
+                width: 128,
+                height: 128,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: Colors.black.withOpacity(0.6),
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.surface,
-                    width: 3,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.shadow.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
-                child: Icon(
-                  Icons.camera_alt_rounded,
-                  color: Colors.white,
-                  size: 20,
+                child: const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
                 ),
               ),
-            ),
+
+            // Overlay con ícono de cámara (solo si no está cargando)
+            if (!_isUploadingPhoto)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: theme.colorScheme.surface,
+                      width: 3,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.colorScheme.shadow.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 16),
@@ -844,37 +1036,49 @@ class _ProfileScreenState extends State<ProfileScreen>
         Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: _startEditingPhoto,
+            onTap: _isUploadingPhoto
+                ? null
+                : _showImageSourceDialog, // Deshabilitado durante carga
             borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: theme.colorScheme.primary.withOpacity(0.2),
-                  width: 1.5,
+            child: Opacity(
+              opacity: _isUploadingPhoto ? 0.6 : 1.0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.edit_rounded,
-                    size: 20,
-                    color: theme.colorScheme.primary,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Cambiar foto de perfil',
-                    style: TextStyle(
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isUploadingPhoto
+                          ? Icons.hourglass_empty
+                          : Icons.edit_rounded,
+                      size: 20,
                       color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      fontFamily: fontFamilyPrimary,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      _isUploadingPhoto
+                          ? 'Subiendo foto...'
+                          : 'Cambiar foto de perfil',
+                      style: TextStyle(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        fontFamily: fontFamilyPrimary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

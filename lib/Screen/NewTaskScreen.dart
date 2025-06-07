@@ -1,52 +1,10 @@
-// lib/Screen/NewTaskScreen.dart
+// lib/Screen/NewTaskScreen.dart - REFACTORIZADO CON TaskUtils
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
-
-enum TaskPriority { low, medium, high, urgent }
-
-extension TaskPriorityExtension on TaskPriority {
-  String get name {
-    switch (this) {
-      case TaskPriority.low:
-        return 'Baja';
-      case TaskPriority.medium:
-        return 'Media';
-      case TaskPriority.high:
-        return 'Alta';
-      case TaskPriority.urgent:
-        return 'Urgente';
-    }
-  }
-
-  Color getColor() {
-    switch (this) {
-      case TaskPriority.low:
-        return Colors.green[600]!;
-      case TaskPriority.medium:
-        return Colors.blue[600]!;
-      case TaskPriority.high:
-        return Colors.orange[600]!;
-      case TaskPriority.urgent:
-        return Colors.red[600]!;
-    }
-  }
-
-  IconData getIcon() {
-    switch (this) {
-      case TaskPriority.low:
-        return Icons.keyboard_arrow_down;
-      case TaskPriority.medium:
-        return Icons.remove;
-      case TaskPriority.high:
-        return Icons.keyboard_arrow_up;
-      case TaskPriority.urgent:
-        return Icons.priority_high;
-    }
-  }
-}
+import 'package:classroom_mejorado/utils/tasks_utils.dart'; // ✅ IMPORT FUNCIONES COMPARTIDAS
 
 class NewTaskScreen extends StatefulWidget {
   final String communityId;
@@ -63,24 +21,23 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
   final _descriptionController = TextEditingController();
 
   DateTime? _selectedDueDate;
-  TaskPriority _selectedPriority = TaskPriority.medium;
+  TaskPriority _selectedPriority =
+      TaskPriority.medium; // ✅ USAR ENUM DE TaskUtils
 
-  // --- NUEVAS VARIABLES DE ESTADO PARA LA ASIGNACIÓN ---
-  String? _assignedToId; // UID del usuario asignado
-  String? _assignedToName; // Nombre del usuario asignado
-  String? _assignedToImageUrl; // URL de la foto del usuario asignado
-  List<Map<String, dynamic>> _communityMembers =
-      []; // Lista de miembros para el dropdown
-  bool _fetchingMembers =
-      true; // Estado para indicar si se están cargando los miembros
-  // --- FIN NUEVAS VARIABLES ---
+  // --- VARIABLES DE ESTADO PARA LA ASIGNACIÓN ---
+  String? _assignedToId;
+  String? _assignedToName;
+  String? _assignedToImageUrl;
+  List<Map<String, dynamic>> _communityMembers = [];
+  bool _fetchingMembers = true;
+  bool _membersDataReady = false;
 
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchCommunityMembers(); // Llamar a la función para cargar miembros
+    _fetchCommunityMembers();
   }
 
   @override
@@ -90,16 +47,21 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
     super.dispose();
   }
 
-  // --- NUEVA FUNCIÓN: Obtener miembros de la comunidad ---
   Future<void> _fetchCommunityMembers() async {
     setState(() {
       _fetchingMembers = true;
+      _membersDataReady = false;
     });
 
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       _showError('Usuario no autenticado.');
-      if (mounted) setState(() => _fetchingMembers = false);
+      if (mounted) {
+        setState(() {
+          _fetchingMembers = false;
+          _membersDataReady = false;
+        });
+      }
       return;
     }
 
@@ -112,7 +74,12 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
 
       if (!communityDoc.exists) {
         _showError('Comunidad no encontrada.');
-        if (mounted) setState(() => _fetchingMembers = false);
+        if (mounted) {
+          setState(() {
+            _fetchingMembers = false;
+            _membersDataReady = false;
+          });
+        }
         return;
       }
 
@@ -129,7 +96,10 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
           final userData = userDoc.data();
           membersData.add({
             'uid': uid,
-            'displayName': userData?['name'] ?? 'Usuario Desconocido',
+            'displayName':
+                userData?['name'] ??
+                userData?['displayName'] ??
+                'Usuario Desconocido',
             'photoURL': userData?['photoURL'],
           });
         }
@@ -140,59 +110,66 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
           _communityMembers = membersData;
           _fetchingMembers = false;
 
-          // Asignar al usuario actual por defecto si es miembro de la comunidad
-          final currentMemberData = _communityMembers.firstWhereOrNull(
-            (member) => member['uid'] == currentUser.uid,
-          );
+          if (_communityMembers.isNotEmpty) {
+            // Buscar al usuario actual en la lista
+            final currentMemberData = _communityMembers.firstWhereOrNull(
+              (member) => member['uid'] == currentUser.uid,
+            );
 
-          if (currentMemberData != null) {
-            _assignedToId = currentMemberData['uid'] as String;
-            _assignedToName = currentMemberData['displayName'] as String;
-            _assignedToImageUrl = currentMemberData['photoURL'] as String?;
-          } else if (_communityMembers.isNotEmpty) {
-            // Si el usuario actual no está en la lista (raro si está creando la tarea),
-            // se asigna al primer miembro disponible
-            _assignedToId = _communityMembers.first['uid'] as String;
-            _assignedToName = _communityMembers.first['displayName'] as String;
-            _assignedToImageUrl =
-                _communityMembers.first['photoURL'] as String?;
+            if (currentMemberData != null) {
+              _assignedToId = currentMemberData['uid'] as String;
+              _assignedToName = currentMemberData['displayName'] as String;
+              _assignedToImageUrl = currentMemberData['photoURL'] as String?;
+              print('✅ Tarea asignada al usuario actual: $_assignedToName');
+            } else {
+              final firstMember = _communityMembers.first;
+              _assignedToId = firstMember['uid'] as String;
+              _assignedToName = firstMember['displayName'] as String;
+              _assignedToImageUrl = firstMember['photoURL'] as String?;
+              print(
+                '⚠️ Usuario actual no encontrado. Asignando a: $_assignedToName',
+              );
+            }
+
+            _membersDataReady =
+                _assignedToId != null && _assignedToName != null;
+            print(
+              '✅ Datos de miembros listos. Asignado a: $_assignedToName (ID: $_assignedToId)',
+            );
           } else {
-            // Si no hay miembros, dejar en null (o asignar a "nadie")
             _assignedToId = null;
-            _assignedToName = 'Nadie';
+            _assignedToName = null;
             _assignedToImageUrl = null;
+            _membersDataReady = false;
+            print('⚠️ No hay miembros en la comunidad');
           }
         });
       }
     } catch (e) {
+      print('❌ Error al cargar miembros: $e');
       _showError('Error al cargar miembros de la comunidad: $e');
-      if (mounted) setState(() => _fetchingMembers = false);
+      if (mounted) {
+        setState(() {
+          _fetchingMembers = false;
+          _membersDataReady = false;
+        });
+      }
     }
   }
 
-  // --- Función auxiliar para firstWhereOrNull (si no la tienes en tus extensiones) ---
-  // Puedes agregarla como una extensión de List o una función global si no usas paquete como collection
-  T? _firstWhereOrNull<T>(List<T> list, bool Function(T) test) {
-    for (T element in list) {
-      if (test(element)) {
-        return element;
-      }
+  bool _validateAssignment() {
+    if (!_membersDataReady) {
+      _showError('Espera a que se carguen los miembros de la comunidad');
+      return false;
     }
-    return null;
+
+    if (_assignedToId == null || _assignedToName == null) {
+      _showError('Debes asignar la tarea a un miembro');
+      return false;
+    }
+
+    return true;
   }
-  // Uso: _communityMembers.firstWhereOrNull( (member) => member['uid'] == currentUser.uid);
-  // Reemplazar '_communityMembers.firstWhereOrNull' con '_firstWhereOrNull(_communityMembers, ...)' si no tienes la extensión.
-  // O añadir la extensión:
-  // extension ListExtension<T> on List<T> {
-  //   T? firstWhereOrNull(bool Function(T) test) {
-  //     for (T element in this) {
-  //       if (test(element)) {
-  //         return element;
-  //       }
-  //     }
-  //     return null;
-  //   }
-  // }
 
   Future<void> _selectDueDate() async {
     final theme = Theme.of(context);
@@ -225,11 +202,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
   Future<void> _createTask() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Puedes agregar una validación para _assignedToId si la asignación es obligatoria
-    // if (_assignedToId == null) {
-    //   _showError('Debes asignar la tarea a un miembro.');
-    //   return;
-    // }
+    if (!_validateAssignment()) return;
 
     setState(() {
       _isLoading = true;
@@ -253,6 +226,15 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
           ? (communitySnapshot.get('name') as String? ??
                 'Comunidad Desconocida')
           : 'Comunidad Desconocida';
+
+      print('📝 Creando tarea con:');
+      print('   - Título: ${_titleController.text.trim()}');
+      print('   - Asignado a: $_assignedToName (ID: $_assignedToId)');
+      print('   - Prioridad: ${_selectedPriority.name}');
+      print(
+        '   - Estado: ${TaskState.toDo.name.toLowerCase()}',
+      ); // ✅ USAR ENUM DE TaskUtils
+
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(widget.communityId)
@@ -260,28 +242,31 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
           .add({
             'title': _titleController.text.trim(),
             'description': _descriptionController.text.trim(),
-            'state': 'por hacer', // Estado inicial
-            'priority': _selectedPriority.name,
-            'assignedToId': _assignedToId, // <<< ASIGNADO: ID
-            'assignedToUser': _assignedToName, // <<< ASIGNADO: Nombre
-            'assignedToImageUrl':
-                _assignedToImageUrl, // <<< ASIGNADO: URL de imagen
-            'createdAtId': user.uid, // Quien crea la tarea
-            'createdAtName':
-                user.displayName ?? 'Usuario', // Nombre de quien crea
-            'createdAtImageUrl': user.photoURL, // Foto de quien crea
+            'state': TaskState.toDo.name
+                .toLowerCase(), // ✅ USAR ENUM DE TaskUtils
+            'priority': _selectedPriority.name, // ✅ USAR ENUM DE TaskUtils
+            'assignedToId': _assignedToId!,
+            'assignedToName': _assignedToName!,
+            'assignedToUser': _assignedToName!,
+            'assignedToImageUrl': _assignedToImageUrl,
+            'createdAtId': user.uid,
+            'createdAtName': user.displayName ?? 'Usuario',
+            'createdAtImageUrl': user.photoURL,
             'dueDate': _selectedDueDate != null
                 ? Timestamp.fromDate(_selectedDueDate!)
                 : null,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
-            'communityId': widget.communityId, // <-- ¡AÑADE ESTA LÍNEA!
-            'communityName': communityName, // <-- ¡AÑADE ESTA LÍNEA!
+            'communityId': widget.communityId,
+            'communityName': communityName,
           });
 
-      _showSuccess('¡Tarea creada exitosamente!');
+      print('✅ Tarea creada exitosamente y asignada a $_assignedToName');
+      print('✅ Estado guardado como: ${TaskState.toDo.name.toLowerCase()}');
+      _showSuccess('¡Tarea creada y asignada a $_assignedToName!');
       Navigator.of(context).pop();
     } catch (e) {
+      print('❌ Error al crear tarea: $e');
       _showError('Error al crear la tarea: $e');
     } finally {
       setState(() {
@@ -331,7 +316,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
         ),
         actions: [
           TextButton.icon(
-            onPressed: _isLoading ? null : _createTask,
+            onPressed: (_isLoading || !_membersDataReady) ? null : _createTask,
             icon: _isLoading
                 ? SizedBox(
                     width: 16,
@@ -341,13 +326,24 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                       color: theme.colorScheme.primary,
                     ),
                   )
-                : Icon(Icons.check, color: theme.colorScheme.primary),
+                : Icon(
+                    Icons.check,
+                    color: _membersDataReady
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline,
+                  ),
             label: Text(
-              _isLoading ? 'Creando...' : 'Crear',
+              _isLoading
+                  ? 'Creando...'
+                  : _membersDataReady
+                  ? 'Crear'
+                  : 'Cargando...',
               style: TextStyle(
                 fontFamily: fontFamilyPrimary,
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.primary,
+                color: _membersDataReady
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.outline,
               ),
             ),
           ),
@@ -525,7 +521,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
 
               const SizedBox(height: 24),
 
-              // --- NUEVA SECCIÓN: Asignar a ---
+              // Asignar a
               Text(
                 'Asignar a',
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -535,117 +531,134 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              _fetchingMembers // Mostrar indicador de carga o el selector
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        color: theme.colorScheme.primary,
-                      ),
-                    )
-                  : _communityMembers.isEmpty
-                  ? Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.2),
+
+              if (_fetchingMembers)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                      child: Text(
-                        'No hay otros miembros en esta comunidad para asignar.',
+                      const SizedBox(width: 16),
+                      Text(
+                        'Cargando miembros de la comunidad...',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontFamily: fontFamilyPrimary,
                           color: theme.colorScheme.onSurface.withOpacity(0.7),
                         ),
                       ),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.2),
-                        ),
+                    ],
+                  ),
+                )
+              else if (_communityMembers.isEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Text(
+                    'No hay otros miembros en esta comunidad para asignar.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontFamily: fontFamilyPrimary,
+                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _assignedToId,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.primary,
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _assignedToId,
-                          icon: Icon(
-                            Icons.arrow_drop_down,
-                            color: theme.colorScheme.primary,
-                          ),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _assignedToId = newValue;
-                              // Encontrar el miembro seleccionado para actualizar nombre e imagen
-                              final selectedMember = _firstWhereOrNull(
-                                _communityMembers,
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          _assignedToId = newValue;
+                          final selectedMember = _communityMembers
+                              .firstWhereOrNull(
                                 (member) => member['uid'] == newValue,
                               );
-                              if (selectedMember != null) {
-                                _assignedToName =
-                                    selectedMember['displayName'] as String;
-                                _assignedToImageUrl =
-                                    selectedMember['photoURL'] as String?;
-                              } else {
-                                // Esto no debería pasar si newValue siempre es un UID válido de la lista
-                                _assignedToName = null;
-                                _assignedToImageUrl = null;
-                              }
-                            });
-                          },
-                          items: _communityMembers
-                              .map<DropdownMenuItem<String>>((member) {
-                                return DropdownMenuItem<String>(
-                                  value: member['uid'] as String,
-                                  child: Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundImage:
-                                            member['photoURL'] != null
-                                            ? NetworkImage(
-                                                member['photoURL'] as String,
-                                              )
-                                            : null,
-                                        child: member['photoURL'] == null
-                                            ? Icon(
-                                                Icons.person,
-                                                color:
-                                                    theme.colorScheme.onPrimary,
-                                              )
-                                            : null,
-                                        backgroundColor: theme
-                                            .colorScheme
-                                            .primary
-                                            .withOpacity(0.2),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Text(
-                                        member['displayName'] as String,
-                                        style: theme.textTheme.bodyLarge
-                                            ?.copyWith(
-                                              fontFamily: fontFamilyPrimary,
-                                              color:
-                                                  theme.colorScheme.onSurface,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              })
-                              .toList(),
-                        ),
-                      ),
+                          if (selectedMember != null) {
+                            _assignedToName =
+                                selectedMember['displayName'] as String;
+                            _assignedToImageUrl =
+                                selectedMember['photoURL'] as String?;
+                            print('✅ Tarea reasignada a: $_assignedToName');
+                          } else {
+                            _assignedToName = null;
+                            _assignedToImageUrl = null;
+                            print('⚠️ Asignación limpiada');
+                          }
+                        });
+                      },
+                      items: _communityMembers.map<DropdownMenuItem<String>>((
+                        member,
+                      ) {
+                        return DropdownMenuItem<String>(
+                          value: member['uid'] as String,
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 16,
+                                backgroundImage: member['photoURL'] != null
+                                    ? NetworkImage(member['photoURL'] as String)
+                                    : null,
+                                child: member['photoURL'] == null
+                                    ? Icon(
+                                        Icons.person,
+                                        color: theme.colorScheme.onPrimary,
+                                      )
+                                    : null,
+                                backgroundColor: theme.colorScheme.primary
+                                    .withOpacity(0.2),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                member['displayName'] as String,
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  fontFamily: fontFamilyPrimary,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                     ),
+                  ),
+                ),
 
-              // --- FIN NUEVA SECCIÓN ---
-              const SizedBox(
-                height: 24,
-              ), // Espacio antes del selector de prioridad
-              // Selector de prioridad (movido abajo para mejor flujo de UI)
+              const SizedBox(height: 24),
+
+              // Selector de prioridad
               Text(
                 'Prioridad',
                 style: theme.textTheme.titleSmall?.copyWith(
@@ -666,6 +679,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                 ),
                 child: Column(
                   children: TaskPriority.values.map((priority) {
+                    // ✅ USAR ENUM DE TaskUtils
                     final isSelected = _selectedPriority == priority;
 
                     return InkWell(
@@ -733,21 +747,23 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
 
               const SizedBox(height: 32),
 
-              // Botón de crear
+              // Botón crear tarea
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _createTask,
+                  onPressed: (_isLoading || !_membersDataReady)
+                      ? null
+                      : _createTask,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
+                    backgroundColor: _membersDataReady
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.outline.withOpacity(0.3),
                     foregroundColor: theme.colorScheme.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
-                    disabledBackgroundColor: theme.colorScheme.outline
-                        .withOpacity(0.3),
                   ),
                   child: _isLoading
                       ? Row(
@@ -778,7 +794,9 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                             Icon(Icons.add_task, size: 20),
                             const SizedBox(width: 8),
                             Text(
-                              'Crear Tarea',
+                              _membersDataReady
+                                  ? 'Crear Tarea'
+                                  : 'Cargando datos...',
                               style: TextStyle(
                                 fontFamily: fontFamilyPrimary,
                                 fontSize: 16,
@@ -789,6 +807,8 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
                         ),
                 ),
               ),
+
+              // ✅ DEBUG: Usar función compartida de TaskUtils (TEMPORAL)
             ],
           ),
         ),
@@ -797,7 +817,7 @@ class _NewTaskScreenState extends State<NewTaskScreen> {
   }
 }
 
-// Puedes añadir esta extensión si no usas algún paquete que ya la provea (como collection)
+// Extensión auxiliar
 extension _ListExtension<T> on List<T> {
   T? firstWhereOrNull(bool Function(T) test) {
     for (T element in this) {

@@ -2,8 +2,6 @@ import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
-// Asegúrate de que la ruta de importación sea correcta según la estructura de tu proyecto.
-// Si 'fairbas' es el nombre de tu paquete (como se ve en main.dart):
 
 class AppAnimations {
   Future<T?> showAnimatedProductCreateDialog<T>(
@@ -14,7 +12,7 @@ class AppAnimations {
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: Colors.black.withValues(alpha: 0.6), // CORREGIDO
+      barrierColor: Colors.black.withValues(alpha: 0.6),
       transitionDuration: const Duration(milliseconds: 500),
       pageBuilder:
           (
@@ -22,8 +20,6 @@ class AppAnimations {
             Animation<double> animation,
             Animation<double> secondaryAnimation,
           ) {
-            // ProductCreateWidget se encarga de construir el contenido del diálogo.
-            // Ya que ProductCreateWidget devuelve un AlertDialog, esto funcionará.
             return child;
           },
       transitionBuilder:
@@ -31,9 +27,8 @@ class AppAnimations {
             BuildContext context,
             Animation<double> animation,
             Animation<double> secondaryAnimation,
-            Widget child, // Este 'child' es el ProductCreateWidget
+            Widget child,
           ) {
-            // --- Tu animación: Scale (Zoom) y Fade In ---
             return ScaleTransition(
               scale: CurvedAnimation(
                 parent: animation,
@@ -51,100 +46,212 @@ class AppAnimations {
     );
   }
 
+  // ✅ VERSIÓN MEJORADA: Más rápida y suave
   static Route createFadeThroughWithBlurRoute(Widget screen) {
     const Color appMainBackgroundColor = Color(0xFF6B2F2F);
 
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => screen,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        // Define la intensidad máxima del blur al inicio
-        final double maxBlur = 8.0; // Ajusta este valor si es necesario
+        // ✅ Blur más sutil y rápido
+        final double maxBlur = 4.0; // Reducido de 8.0 a 4.0
 
-        // Anima el valor del sigma del blur de 'maxBlur' a 0.0
+        // ✅ Curva más rápida y natural
         final blurAnimation = CurvedAnimation(
           parent: animation,
-          curve: Curves
-              .easeOutCubic, // Curva para que el blur se disipe rápidamente
+          curve: Curves.fastOutSlowIn, // Más natural que easeOutCubic
         );
+
         final animatedBlurSigma = Tween<double>(
           begin: maxBlur,
           end: 0.0,
         ).evaluate(blurAnimation);
 
-        return FadeThroughTransition(
-          animation: animation,
-          secondaryAnimation: secondaryAnimation,
-          // CLAVE para evitar el flash: Define el color de fondo de la transición.
-          // Este color se mostrará detrás de la pantalla que se está animando.
-          // Asegúrate de que coincida con el color de fondo de tus Scaffolds.
-          fillColor: appMainBackgroundColor, // Usa el color principal de tu app
-          child: ImageFiltered(
-            // Aplica el filtro de imagen (blur) al contenido de la nueva pantalla
-            imageFilter: ImageFilter.blur(
-              sigmaX: animatedBlurSigma,
-              sigmaY: animatedBlurSigma,
+        // ✅ Fade más suave con curva personalizada
+        final fadeAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+        );
+
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: FadeThroughTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            fillColor: appMainBackgroundColor,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(
+                sigmaX: animatedBlurSigma,
+                sigmaY: animatedBlurSigma,
+              ),
+              child: child,
             ),
-            child: child, // Este 'child' es la nueva pantalla
           ),
         );
       },
-      // Ajusta la duración de la transición. 400-500ms es un buen rango.
-      transitionDuration: const Duration(milliseconds: 800),
-      // transitionDuration: const Duration(milliseconds: 500), // Si quieres que sea un poco más lento
+      // ✅ Duración reducida de 800ms a 350ms
+      transitionDuration: const Duration(milliseconds: 350),
     );
   }
 
-  static Route createFadeThroughWithSymmetricBlurRoute(Widget screen) {
-    // Definimos el color de fondo principal de tu aplicación aquí.
-    // Esto es CRÍTICO para evitar el flash blanco.
-    const Color appMainBackgroundColor = Color(
-      0xFF6B2F2F,
-    ); // Ajusta si tu color es diferente
+  // ✅ VERSIÓN COMPLETAMENTE NUEVA: Ultra fluida y moderna
+  static Route createSmoothSlideRoute(Widget screen) {
+    const Color appMainBackgroundColor = Color(0xFF6B2F2F);
 
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => screen,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        final double maxBlur = 8.0; // Intensidad máxima del blur
+        // Animación de deslizamiento desde abajo con fade
+        const begin = Offset(0.0, 0.05); // Muy sutil
+        const end = Offset.zero;
 
-        // La magia está aquí:
-        // Cuando `animation.value` va de 0.0 a 1.0 (PUSH, entrada de la nueva pantalla),
-        // `(1.0 - animation.value)` va de 1.0 a 0.0. Así, `animatedBlurSigma` va de `maxBlur` a `0.0`.
-        //
-        // Cuando `animation.value` va de 1.0 a 0.0 (POP, salida de la pantalla actual),
-        // `(1.0 - animation.value)` va de 0.0 a 1.0. Así, `animatedBlurSigma` va de `0.0` a `maxBlur`.
-        //
-        // ¡Esto nos da blur-in en push y blur-out en pop con la misma lógica!
+        final slideAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.fastOutSlowIn,
+        );
+
+        final fadeAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOut,
+        );
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: begin,
+            end: end,
+          ).animate(slideAnimation),
+          child: FadeTransition(opacity: fadeAnimation, child: child),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+      reverseTransitionDuration: const Duration(milliseconds: 250),
+    );
+  }
+
+  // ✅ VERSIÓN ALTERNATIVA: Escala suave (como iOS)
+  static Route createScaleRoute(Widget screen) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final scaleAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.fastOutSlowIn,
+        );
+
+        final fadeAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+        );
+
+        return ScaleTransition(
+          scale: Tween<double>(
+            begin: 0.92, // Empieza un poco más pequeño
+            end: 1.0,
+          ).animate(scaleAnimation),
+          child: FadeTransition(opacity: fadeAnimation, child: child),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+      reverseTransitionDuration: const Duration(milliseconds: 250),
+    );
+  }
+
+  // ✅ VERSIÓN MEJORADA del simétrico
+  static Route createFadeThroughWithSymmetricBlurRoute(Widget screen) {
+    const Color appMainBackgroundColor = Color(0xFF6B2F2F);
+
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final double maxBlur = 3.0; // Reducido para más suavidad
+
+        // ✅ Curva más natural
         final blurValue =
             1.0 -
             CurvedAnimation(
               parent: animation,
-              curve: Curves
-                  .easeOutCubic, // Curva para la disipación/aplicación del blur
+              curve: Curves.fastOutSlowIn, // Más natural
             ).value;
 
         final animatedBlurSigma = blurValue * maxBlur;
 
-        return FadeThroughTransition(
-          animation: animation,
-          secondaryAnimation: secondaryAnimation,
-          // Rellena el fondo con el color principal de la aplicación para evitar el flash
-          fillColor: appMainBackgroundColor,
-          child: ImageFiltered(
-            // Aplica el filtro de imagen (blur) al contenido de la pantalla
-            imageFilter: ImageFilter.blur(
-              sigmaX: animatedBlurSigma,
-              sigmaY: animatedBlurSigma,
+        // ✅ Fade más controlado
+        final fadeAnimation = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.0, 0.8, curve: Curves.easeOut),
+        );
+
+        return FadeTransition(
+          opacity: fadeAnimation,
+          child: FadeThroughTransition(
+            animation: animation,
+            secondaryAnimation: secondaryAnimation,
+            fillColor: appMainBackgroundColor,
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(
+                sigmaX: animatedBlurSigma,
+                sigmaY: animatedBlurSigma,
+              ),
+              child: child,
             ),
-            child:
-                child, // Este 'child' es la pantalla que está entrando/saliendo
           ),
         );
       },
-      // Duración de la transición. 400ms es un buen balance.
-      transitionDuration: const Duration(milliseconds: 800),
-      // reverseTransitionDuration: const Duration(milliseconds: 400), // Opcional: si quieres una duración diferente para el pop
+      // ✅ Duración optimizada
+      transitionDuration: const Duration(milliseconds: 400),
+      reverseTransitionDuration: const Duration(milliseconds: 350),
     );
   }
 
-  // Puedes añadir más métodos para otros diálogos animados aquí si lo necesitas.
+  // ✅ BONUS: Animación tipo "Push" moderna
+  static Route createModernPushRoute(Widget screen) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => screen,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        // Pantalla actual se desliza hacia la izquierda
+        final primarySlide =
+            Tween<Offset>(
+              begin: Offset.zero,
+              end: const Offset(-0.3, 0.0),
+            ).animate(
+              CurvedAnimation(
+                parent: secondaryAnimation,
+                curve: Curves.fastOutSlowIn,
+              ),
+            );
+
+        // Nueva pantalla entra desde la derecha
+        final secondarySlide =
+            Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.fastOutSlowIn),
+            );
+
+        // Fade para la pantalla que sale
+        final fadeOut = Tween<double>(begin: 1.0, end: 0.7).animate(
+          CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeOut),
+        );
+
+        return Stack(
+          children: [
+            // Pantalla anterior (se desliza y se desvanece)
+            if (secondaryAnimation.status != AnimationStatus.dismissed)
+              SlideTransition(
+                position: primarySlide,
+                child: FadeTransition(
+                  opacity: fadeOut,
+                  child: Container(), // La pantalla anterior
+                ),
+              ),
+            // Nueva pantalla (entra deslizándose)
+            SlideTransition(position: secondarySlide, child: child),
+          ],
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 350),
+      reverseTransitionDuration: const Duration(milliseconds: 300),
+    );
+  }
 }

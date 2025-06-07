@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
-import 'package:classroom_mejorado/Widgets/alert_widet.dart'; // Si usas tu widget de alerta animado
+import 'package:classroom_mejorado/widgets/alert_widet.dart'; // Si usas tu widget de alerta animado
 import 'package:classroom_mejorado/function/animations.dart'; // Si usas tu clase de animaciones
 
 class ForgotPasswordScreen extends StatefulWidget {

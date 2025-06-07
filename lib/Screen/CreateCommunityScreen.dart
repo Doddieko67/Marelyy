@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
-
-// CommunityPrivacy enum and its extension are removed as per request.
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'package:classroom_mejorado/services/file_upload_service.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CreateCommunityScreen extends StatefulWidget {
   const CreateCommunityScreen({super.key});
@@ -17,63 +19,469 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _customImageUrlController = TextEditingController();
+  final FileUploadService _fileUploadService = FileUploadService();
 
-  // _selectedPrivacy is removed as per request.
   bool _isLoading = false;
-  bool _useCustomUrl = false; // Nueva variable para alternar entre opciones
-
-  // Lista de avatares predefinidos para las comunidades
-  final List<String> _communityAvatars = [
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBpVSBqjPGyXCSt3yWiVBFbpLaxQdaTyDd9bx-yqMX52P2JnirC2AP_ZS_exB3O_aBgc5lf7XWfyXrimUHcH03V6LYKbqsRGpjdH2pNJirc_QP0yZvfgqrhv8foadJ_C2vk8lDcZ4uimqukqSf2prP3m4r97jc9KsMPez6DYIFCnw5IXpp0gdUsgoJlOcLF1s2y0W_9-MEzf6FmG4mmx27tt6z0dKoT7zP24mSRkAxWLmjhiPKO2nbpD4wOaIGqixvsWO48q3M',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuChfRjiApW79uRw-wUlwr12aE3K5ecrJ72jaEAMQdfyxfWUWgp_8SS3bNjX5kvUnMxRplQlAod6pK-m8IBedFstIrDPDOBfq3eIdrWoyEHC-Ca2FW_Xtgy7TphnRkSttS8bTqyrLL3CI1awHaWBULRUty_zxpYh6U9YlmGxFpW20X_TRWEHv_YsxYyyTx8r0LQh56zbCXc9MClQ-y5nw6cmfeZjPEWhlHda8RBe3QDpsrrBn2DyG8fU4bvrtewRi6Ge_yAewsU',
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBFXD8Jqn5TltNCXcqaqregwKKFZqwK2qw0r4izTjWvSzNkcZD2bK34P94WhOKndD8bPDWBYgtVF-nGy9YORfCWBHR1y9B9FUBngOD3QLK1ynpEo8Dp3dqdpgUc0miRJCdYO2R_ARRloyTf82jgzoFFW2GqDDicl4_KwuzexSiT1B1euTdNiMy6m10IzIDPpZFGOjdBdBNEnEs1psujabaN-sJ3h0K-gp-2Keuu5tThGZR3zdb-HBvA_su0KtXDr9n6on-Qctc',
-  ];
-
-  int _selectedAvatarIndex = 0;
+  bool _isUploadingImage = false;
+  String? _selectedImageUrl; // URL de la imagen seleccionada
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _customImageUrlController.dispose();
     super.dispose();
   }
 
-  // Función para validar URL de imagen
-  bool _isValidImageUrl(String url) {
-    if (url.isEmpty) return false;
+  // ************ Función para seleccionar y subir imagen ************
+  Future<void> _pickAndUploadImage(ImageSource source) async {
+    setState(() {
+      _isUploadingImage = true;
+    });
 
-    // Verificar que sea una URL válida
-    final Uri? uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) return false;
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedImage = await picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1024,
+        maxHeight: 1024,
+      );
 
-    // Verificar que use http o https
-    if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+      if (pickedImage == null) {
+        setState(() {
+          _isUploadingImage = false;
+        });
+        return; // Usuario canceló
+      }
 
-    // Verificar que tenga una extensión de imagen común
-    final String lowerPath = uri.path.toLowerCase();
-    return lowerPath.endsWith('.jpg') ||
-        lowerPath.endsWith('.jpeg') ||
-        lowerPath.endsWith('.png') ||
-        lowerPath.endsWith('.gif') ||
-        lowerPath.endsWith('.webp') ||
-        url.contains('googleusercontent.com') || // Para las URLs de ejemplo
-        url.contains('imgur.com') ||
-        url.contains('unsplash.com') ||
-        url.contains('pixabay.com');
+      final File imageFile = File(pickedImage.path);
+
+      // Generar nombre único para la imagen
+      final String fileName =
+          'community_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      // Subir imagen usando el servicio
+      final String? downloadUrl = await _fileUploadService.uploadFile(
+        file: imageFile,
+        path:
+            'community_avatars', // Ruta específica para avatares de comunidades
+        fileName: fileName,
+      );
+
+      if (downloadUrl != null) {
+        setState(() {
+          _selectedImageUrl = downloadUrl;
+        });
+
+        _showSuccess('✓ Imagen subida correctamente');
+      } else {
+        throw Exception('Error al subir la imagen');
+      }
+    } catch (e) {
+      print("Error selecting and uploading image: $e");
+      _showError('Error al subir la imagen: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isUploadingImage = false;
+      });
+    }
   }
 
-  // Obtener la URL de imagen final
-  String _getFinalImageUrl() {
-    if (_useCustomUrl && _customImageUrlController.text.trim().isNotEmpty) {
-      return _customImageUrlController.text.trim();
+  // ************ Diálogo para seleccionar fuente de imagen ************
+  void _showImageSourceDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.onSurface.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Text(
+                      'Seleccionar imagen',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Botón Cámara
+                    _buildImageSourceOption(
+                      context,
+                      icon: Icons.camera_alt_rounded,
+                      title: 'Tomar foto',
+                      subtitle: 'Usar la cámara',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickAndUploadImage(ImageSource.camera);
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Botón Galería
+                    _buildImageSourceOption(
+                      context,
+                      icon: Icons.photo_library_rounded,
+                      title: 'Seleccionar de galería',
+                      subtitle: 'Elegir una foto existente',
+                      onTap: () {
+                        Navigator.pop(context);
+                        _pickAndUploadImage(ImageSource.gallery);
+                      },
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Botón Cancelar
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Cancelar',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildImageSourceOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: theme.colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ************ Widget para mostrar la imagen seleccionada ************
+  Widget _buildImageSelector(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Imagen de la comunidad',
+          style: TextStyle(
+            fontFamily: fontFamilyPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onBackground,
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Contenedor de imagen
+        Container(
+          height: 200,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: theme.colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: _selectedImageUrl != null
+              ? _buildSelectedImage(theme)
+              : _buildImagePlaceholder(theme),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Botón para cambiar imagen
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isUploadingImage ? null : _showImageSourceDialog,
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              side: BorderSide(
+                color: theme.colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
+            icon: Icon(
+              _isUploadingImage
+                  ? Icons.hourglass_empty
+                  : (_selectedImageUrl != null
+                        ? Icons.edit
+                        : Icons.add_photo_alternate),
+              color: theme.colorScheme.primary,
+            ),
+            label: Text(
+              _isUploadingImage
+                  ? 'Subiendo imagen...'
+                  : (_selectedImageUrl != null
+                        ? 'Cambiar imagen'
+                        : 'Seleccionar imagen'),
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ),
+        ),
+
+        if (_selectedImageUrl == null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Selecciona una imagen para tu comunidad desde tu galería o cámara',
+            style: TextStyle(
+              fontFamily: fontFamilyPrimary,
+              fontSize: 12,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ],
+    );
+  }
+
+  // Widget para mostrar la imagen seleccionada
+  Widget _buildSelectedImage(ThemeData theme) {
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: CachedNetworkImage(
+            imageUrl: _selectedImageUrl!,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              color: theme.colorScheme.surface,
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              color: theme.colorScheme.error.withOpacity(0.1),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: theme.colorScheme.error,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Error al cargar imagen',
+                    style: TextStyle(
+                      color: theme.colorScheme.error,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Loading overlay
+        if (_isUploadingImage)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.6),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Colors.white),
+                  SizedBox(height: 12),
+                  Text(
+                    'Subiendo imagen...',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Widget placeholder cuando no hay imagen
+  Widget _buildImagePlaceholder(ThemeData theme) {
+    if (_isUploadingImage) {
+      return Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: theme.colorScheme.primary),
+            const SizedBox(height: 16),
+            Text(
+              'Subiendo imagen...',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      );
     }
-    return _communityAvatars[_selectedAvatarIndex];
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(
+            Icons.add_photo_alternate_outlined,
+            size: 40,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Ninguna imagen seleccionada',
+          style: TextStyle(
+            fontFamily: fontFamilyPrimary,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Toca el botón de abajo para seleccionar',
+          style: TextStyle(
+            fontFamily: fontFamilyPrimary,
+            fontSize: 14,
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _createCommunity() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Validar que se haya seleccionado una imagen
+    if (_selectedImageUrl == null) {
+      _showError('Por favor selecciona una imagen para la comunidad');
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -105,22 +513,22 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
           '_${DateTime.now().millisecondsSinceEpoch}'; // Añade timestamp para unicidad
 
       // Crear la comunidad en Firestore
-      await FirebaseFirestore.instance.collection('communities').doc(communityId).set({
-        'name': _nameController.text.trim(),
-        'description': _descriptionController.text.trim(),
-        'imageUrl':
-            _getFinalImageUrl(), // Usar la URL final (predefinida o personalizada)
-        // 'privacy' field is removed as per request.
-        'ownerId': user.uid,
-        'createdByName': user.displayName ?? 'Usuario', // Nombre del creador
-        'createdAt': FieldValue.serverTimestamp(),
-        'memberCount': 1, // Inicialmente solo el creador
-        'members': [user.uid], // El creador es automáticamente miembro
-        // 'joinCode': null, // Opcional: generar un código de unión aquí si es privada
-      });
+      await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(communityId)
+          .set({
+            'name': _nameController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'imageUrl': _selectedImageUrl!, // Usar la imagen subida
+            'ownerId': user.uid,
+            'createdByName':
+                user.displayName ?? 'Usuario', // Nombre del creador
+            'createdAt': FieldValue.serverTimestamp(),
+            'memberCount': 1, // Inicialmente solo el creador
+            'members': [user.uid], // El creador es automáticamente miembro
+          });
 
       // Agregar al usuario como administrador en la subcolección de miembros
-      // (Esto es opcional si ya manejas roles basado en 'ownerId')
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(communityId)
@@ -150,13 +558,20 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: Theme.of(context).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.green[600]),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
@@ -186,7 +601,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
         ),
         actions: [
           TextButton.icon(
-            onPressed: _isLoading ? null : _createCommunity,
+            onPressed: (_isLoading || _isUploadingImage)
+                ? null
+                : _createCommunity,
             icon: _isLoading
                 ? SizedBox(
                     width: 16,
@@ -216,310 +633,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Selector de imagen
-              Text(
-                'Imagen de la comunidad',
-                style: TextStyle(
-                  fontFamily: fontFamilyPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.onBackground,
-                ),
-              ),
-              const SizedBox(height: 12),
+              _buildImageSelector(theme),
 
-              // Toggle entre opciones predefinidas y URL personalizada
-              Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _useCustomUrl = false;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: !_useCustomUrl
-                                ? theme.colorScheme.primary
-                                : Colors.transparent,
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              bottomLeft: Radius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            'Predefinidas',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: fontFamilyPrimary,
-                              fontWeight: FontWeight.w600,
-                              color: !_useCustomUrl
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface.withOpacity(
-                                      0.7,
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _useCustomUrl = true;
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          decoration: BoxDecoration(
-                            color: _useCustomUrl
-                                ? theme.colorScheme.primary
-                                : Colors.transparent,
-                            borderRadius: const BorderRadius.only(
-                              topRight: Radius.circular(16),
-                              bottomRight: Radius.circular(16),
-                            ),
-                          ),
-                          child: Text(
-                            'URL personalizada',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontFamily: fontFamilyPrimary,
-                              fontWeight: FontWeight.w600,
-                              color: _useCustomUrl
-                                  ? theme.colorScheme.onPrimary
-                                  : theme.colorScheme.onSurface.withOpacity(
-                                      0.7,
-                                    ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // Mostrar opciones predefinidas o campo URL según la selección
-              if (!_useCustomUrl) ...[
-                // Selector de avatares predefinidos
-                Container(
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _communityAvatars.length,
-                    itemBuilder: (context, index) {
-                      final isSelected = _selectedAvatarIndex == index;
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedAvatarIndex = index;
-                          });
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                              width: 3,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _communityAvatars[index],
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 80,
-                                  height: 80,
-                                  color: theme.colorScheme.outline.withOpacity(
-                                    0.2,
-                                  ),
-                                  child: Icon(
-                                    Icons.group,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ] else ...[
-                // Campo para URL personalizada
-                Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  child: TextFormField(
-                    controller: _customImageUrlController,
-                    style: TextStyle(
-                      fontFamily: fontFamilyPrimary,
-                      fontSize: 16,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'URL de la imagen',
-                      labelStyle: TextStyle(
-                        fontFamily: fontFamilyPrimary,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                      ),
-                      hintText: 'https://ejemplo.com/imagen.jpg',
-                      hintStyle: TextStyle(
-                        fontFamily: fontFamilyPrimary,
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      prefixIcon: Icon(
-                        Icons.link,
-                        color: theme.colorScheme.primary,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(20),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Por favor ingresa una URL de imagen';
-                      }
-                      if (!_isValidImageUrl(value.trim())) {
-                        return 'Por favor ingresa una URL de imagen válida';
-                      }
-                      return null;
-                    },
-                    onChanged: (value) {
-                      setState(() {}); // Para actualizar la vista previa
-                    },
-                  ),
-                ),
-
-                // Vista previa de la imagen personalizada
-                if (_customImageUrlController.text.trim().isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: theme.colorScheme.outline.withOpacity(0.2),
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Vista previa:',
-                          style: TextStyle(
-                            fontFamily: fontFamilyPrimary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface.withOpacity(0.7),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              _customImageUrlController.text.trim(),
-                              width: 100,
-                              height: 100,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Container(
-                                  width: 100,
-                                  height: 100,
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.error.withOpacity(
-                                      0.1,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: theme.colorScheme.error
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: theme.colorScheme.error,
-                                        size: 24,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Error al cargar',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: theme.colorScheme.error,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                              loadingBuilder:
-                                  (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Container(
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.surface,
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
               // Nombre de la comunidad
               Container(
@@ -621,7 +737,9 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _createCommunity,
+                  onPressed: (_isLoading || _isUploadingImage)
+                      ? null
+                      : _createCommunity,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: theme.colorScheme.primary,
                     foregroundColor: theme.colorScheme.onPrimary,
