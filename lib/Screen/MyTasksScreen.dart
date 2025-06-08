@@ -5,7 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
 import 'package:classroom_mejorado/Screen/TaskDetailScreen.dart';
-import 'package:classroom_mejorado/utils/tasks_utils.dart'; // ✅ IMPORT FUNCIONES COMPARTIDAS
+import 'package:classroom_mejorado/utils/tasks_utils.dart'
+    as task_utils; // ✅ IMPORT FUNCIONES COMPARTIDAS
 
 class MyTasksScreen extends StatefulWidget {
   const MyTasksScreen({super.key});
@@ -210,14 +211,12 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
               final String taskId = taskDoc.id;
 
               // ✅ USAR FUNCIÓN COMPARTIDA DE TaskUtils
-              final TaskState taskState = TaskUtils.parseTaskState(
-                taskData['state'] as String?,
-              );
+              final task_utils.TaskState taskState = task_utils
+                  .TaskUtils.parseTaskState(taskData['state'] as String?);
 
               // ✅ USAR FUNCIÓN COMPARTIDA DE TaskUtils PARA PRIORIDAD
-              final TaskPriority taskPriority = TaskUtils.parseTaskPriority(
-                taskData['priority'] as String?,
-              );
+              final task_utils.TaskPriority taskPriority = task_utils
+                  .TaskUtils.parseTaskPriority(taskData['priority'] as String?);
 
               final Timestamp? dueDateTimestamp =
                   taskData['dueDate'] as Timestamp?;
@@ -366,7 +365,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                                 ),
                               ),
                               child: Text(
-                                taskState.name, // ✅ USAR NOMBRE DEL ENUM
+                                taskState.displayName, // ✅ USAR NOMBRE DEL ENUM
                                 style: TextStyle(
                                   fontFamily: fontFamilyPrimary,
                                   fontSize: 12,

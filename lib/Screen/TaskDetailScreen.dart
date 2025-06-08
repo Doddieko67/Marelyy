@@ -946,30 +946,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     }
   }
 
-  // ✅ FUNCIÓN ACTUALIZADA PARA VALIDAR TRANSICIONES DE ESTADO CON ROLES HÍBRIDOS
-  Future<bool> _canTransitionToState(
-    task_utils.TaskState currentState,
-    task_utils.TaskState targetState,
-  ) async {
-    switch (targetState) {
-      case task_utils.TaskState.toDo:
-        return true; // Siempre se puede volver a "Por Hacer"
-
-      case task_utils.TaskState.doing:
-        return currentState == task_utils.TaskState.toDo ||
-            currentState == task_utils.TaskState.underReview;
-
-      case task_utils.TaskState.underReview:
-        return currentState ==
-            task_utils.TaskState.doing; // Solo desde "En Progreso"
-
-      case task_utils.TaskState.done:
-        // ✅ ADMINS GLOBALES O PROPIETARIOS DE LA COMUNIDAD PUEDEN COMPLETAR
-        if (currentState != task_utils.TaskState.underReview) return false;
-        return await _canCompleteTask();
-    }
-  }
-
   // ✅ FUNCIÓN ACTUALIZADA PARA MOSTRAR DIÁLOGO DE CAMBIO DE ESTADO CON VALIDACIÓN DE ADMIN
   void _showChangeStatusDialog(task_utils.TaskState currentTaskState) async {
     final theme = Theme.of(context);

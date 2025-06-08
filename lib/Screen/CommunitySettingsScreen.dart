@@ -1,5 +1,6 @@
 // lib/screen/CommunitySettingsScreen.dart
 import 'package:classroom_mejorado/services/task_service.dart';
+import 'package:classroom_mejorado/utils/task_transfer_management.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -657,30 +658,509 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
     }
   }
 
+  // void _leaveCommunity() async {
+  //   final user = FirebaseAuth.instance.currentUser;
+  //   if (user == null) {
+  //     _showErrorMessage('Debes iniciar sesión.');
+  //     return;
+  //   }
+
+  //   setState(() => _isLoading = true);
+
+  //   try {
+  //     // 🎯 GESTIONAR TAREAS ANTES DE ABANDONAR
+  //     final result = await TaskTransferManager.handleUserTasksBeforeLeaving(
+  //       context: context,
+  //       communityId: widget.communityId,
+  //       showSuccessMessage: _showSuccessMessage,
+  //       showErrorMessage: _showErrorMessage,
+  //     );
+
+  //     // Si se canceló, no proceder
+  //     if (result == TaskTransferResult.cancelled) {
+  //       setState(() => _isLoading = false);
+  //       return;
+  //     }
+
+  //     // ✅ CONTINUAR CON TU LÓGICA ORIGINAL...
+  //     final communityDoc = await FirebaseFirestore.instance
+  //         .collection('communities')
+  //         .doc(widget.communityId)
+  //         .get();
+
+  //     final String? ownerId = communityDoc.get('ownerId');
+  //     final List<String> memberIds = List<String>.from(
+  //       communityDoc.get('members') ?? [],
+  //     );
+
+  //     if (user.uid == ownerId) {
+  //       if (memberIds.length == 1) {
+  //         final bool? confirmDelete = await showDialog<bool>(
+  //           context: context,
+  //           builder: (context) => AlertDialog(
+  //             backgroundColor: Theme.of(context).colorScheme.surface,
+  //             shape: RoundedRectangleBorder(
+  //               borderRadius: BorderRadius.circular(20),
+  //             ),
+  //             title: Row(
+  //               children: [
+  //                 Icon(
+  //                   Icons.warning,
+  //                   color: Theme.of(context).colorScheme.error,
+  //                 ),
+  //                 const SizedBox(width: 8),
+  //                 Text(
+  //                   'Salir',
+  //                   style: TextStyle(
+  //                     color: Theme.of(context).colorScheme.onSurface,
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             content: Container(
+  //               padding: const EdgeInsets.all(12),
+  //               decoration: BoxDecoration(
+  //                 color: Theme.of(
+  //                   context,
+  //                 ).colorScheme.errorContainer.withOpacity(0.3),
+  //                 borderRadius: BorderRadius.circular(10),
+  //               ),
+  //               child: Text(
+  //                 'Eres el único miembro y propietario. ¿Deseas eliminarla permanentemente?',
+  //                 style: TextStyle(
+  //                   color: Theme.of(context).colorScheme.onErrorContainer,
+  //                 ),
+  //               ),
+  //             ),
+  //             actions: [
+  //               TextButton(
+  //                 onPressed: () => Navigator.of(context).pop(false),
+  //                 child: Text(
+  //                   'Cancelar',
+  //                   style: TextStyle(
+  //                     color: Theme.of(context).colorScheme.primary,
+  //                   ),
+  //                 ),
+  //               ),
+  //               FilledButton(
+  //                 onPressed: () => Navigator.of(context).pop(true),
+  //                 style: FilledButton.styleFrom(
+  //                   backgroundColor: Theme.of(context).colorScheme.error,
+  //                 ),
+  //                 child: const Text('Sí, Eliminar'),
+  //               ),
+  //             ],
+  //           ),
+  //         );
+  //         if (confirmDelete == true) _deleteCommunity();
+  //       } else {
+  //         _showAssignNewOwnerAndLeaveDialog();
+  //       }
+  //     } else {
+  //       final bool? confirm = await showDialog<bool>(
+  //         context: context,
+  //         builder: (context) => AlertDialog(
+  //           backgroundColor: Theme.of(context).colorScheme.surface,
+  //           shape: RoundedRectangleBorder(
+  //             borderRadius: BorderRadius.circular(20),
+  //           ),
+  //           title: Row(
+  //             children: [
+  //               Icon(
+  //                 Icons.exit_to_app,
+  //                 color: Theme.of(context).colorScheme.error,
+  //               ),
+  //               const SizedBox(width: 8),
+  //               Text(
+  //                 '¿Abandonar?',
+  //                 style: TextStyle(
+  //                   color: Theme.of(context).colorScheme.onSurface,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //           content: Text(
+  //             '¿Seguro que quieres abandonar esta comunidad?',
+  //             style: TextStyle(
+  //               color: Theme.of(context).colorScheme.onSurfaceVariant,
+  //             ),
+  //           ),
+  //           actions: [
+  //             TextButton(
+  //               onPressed: () => Navigator.of(context).pop(false),
+  //               child: Text(
+  //                 'Cancelar',
+  //                 style: TextStyle(
+  //                   color: Theme.of(context).colorScheme.primary,
+  //                 ),
+  //               ),
+  //             ),
+  //             FilledButton(
+  //               onPressed: () => Navigator.of(context).pop(true),
+  //               style: FilledButton.styleFrom(
+  //                 backgroundColor: Theme.of(context).colorScheme.error,
+  //               ),
+  //               child: const Text('Abandonar'),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //       if (confirm == true) {
+  //         setState(() => _isLoading = true);
+  //         await FirebaseFirestore.instance
+  //             .collection('communities')
+  //             .doc(widget.communityId)
+  //             .update({
+  //               'members': FieldValue.arrayRemove([user.uid]),
+  //             });
+  //         if (mounted) {
+  //           _showSuccessMessage('Has abandonado la comunidad.');
+  //           Navigator.of(context).popUntil((route) => route.isFirst);
+  //         }
+  //       }
+  //     }
+  //     // ... resto de tu código original
+  //   } catch (e) {
+  //     _showErrorMessage('Error al abandonar: $e');
+  //   } finally {
+  //     if (mounted) setState(() => _isLoading = false);
+  //   }
+  // }
+
+  // En CommunitySettingsScreen.dart
+
+  Future<void> _confirmAndDeleteCommunityWrapper() async {
+    // Prevenir múltiples diálogos o acciones si ya está cargando
+    if (_isLoading) return;
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // El usuario debe presionar un botón
+      builder: (BuildContext dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: theme.colorScheme.error),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Confirmar Eliminación',
+                  style: TextStyle(color: theme.colorScheme.onSurface),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontSize: 16,
+                  ),
+                  children: <TextSpan>[
+                    const TextSpan(
+                      text:
+                          '¿Estás absolutamente seguro de que quieres eliminar la comunidad "',
+                    ),
+                    TextSpan(
+                      text: widget.communityName, // Muestra el nombre actual
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const TextSpan(text: '"?'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.5),
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: theme.colorScheme.onErrorContainer,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Esta acción es irreversible. Todos los datos, tareas y archivos asociados a esta comunidad se eliminarán permanentemente.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: theme.colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancelar',
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false); // Usuario canceló
+              },
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              child: const Text('Sí, Eliminar Todo'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true); // Usuario confirmó
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    // Si el usuario no confirmó, no hacer nada
+    if (confirmed != true) {
+      if (mounted) {
+        // Si venías de _leaveCommunity y el usuario cancela el borrado,
+        // es importante resetear _isLoading si lo habías puesto en true.
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
+    // Si confirmó, proceder con la eliminación
+    if (mounted) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      // Llamamos a la función que contiene la lógica de borrado real.
+      // Esta función ya no necesita su propio try-catch principal,
+      // ya que lo manejamos aquí.
+      await _deleteCommunityLogic();
+      _showSuccessMessage(
+        'Comunidad "${widget.communityName}" eliminada exitosamente.',
+      );
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      _showErrorMessage('Error al eliminar la comunidad: ${e.toString()}');
+      // El error detallado ya se imprime desde _deleteCommunityLogic o aquí
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  // Esta es tu función original, ahora renombrada y sin el try-catch principal.
+  // Los try-catch internos para operaciones específicas (como borrar una tarea)
+  // pueden permanecer si quieres que el proceso continúe a pesar de fallos menores.
+  Future<void> _deleteCommunityLogic() async {
+    final _firestore = FirebaseFirestore.instance;
+    final communityId = widget.communityId;
+    // El _fileUploadService ya es un miembro de la clase
+    final taskService = TaskService();
+
+    print(
+      "--- _deleteCommunityLogic INVOCADA para comunidad: $communityId ---",
+    );
+
+    // 1. Obtener el documento de la comunidad
+    DocumentSnapshot communityDoc = await _firestore
+        .collection('communities')
+        .doc(communityId)
+        .get();
+
+    if (!communityDoc.exists) {
+      print('Comunidad $communityId no encontrada durante el borrado.');
+      throw Exception(
+        'La comunidad que intentas borrar ya no existe.',
+      ); // Lanza para que _confirmAndDeleteCommunityWrapper maneje
+    }
+
+    // 2. Borrar la imagen de la comunidad (avatar)
+    final communityData = communityDoc.data() as Map<String, dynamic>?;
+    if (communityData != null && communityData.containsKey('imageUrl')) {
+      String? imageUrl = communityData['imageUrl'] as String?;
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        print('Borrando imagen de comunidad del storage: $imageUrl');
+        try {
+          bool deleted = await _fileUploadService.deleteFileFromStorageByUrl(
+            imageUrl,
+          );
+          if (deleted) {
+            print('Imagen de comunidad del storage borrada exitosamente.');
+          } else {
+            print(
+              'No se pudo borrar la imagen de comunidad del storage o ya no existía.',
+            );
+          }
+        } catch (e) {
+          print(
+            "Error borrando imagen de comunidad del storage $imageUrl: $e. Continuando...",
+          );
+        }
+      }
+    }
+
+    // 3. Borrar todas las tareas y sus archivos asociados
+    print('Borrando tareas de la comunidad $communityId...');
+    QuerySnapshot tasksSnapshot = await _firestore
+        .collection('communities')
+        .doc(communityId)
+        .collection('tasks')
+        .get();
+
+    if (tasksSnapshot.docs.isNotEmpty) {
+      for (DocumentSnapshot taskDoc in tasksSnapshot.docs) {
+        print(
+          'Borrando tarea ${taskDoc.id} y sus archivos de la comunidad $communityId...',
+        );
+        try {
+          await taskService.deleteTask(communityId, taskDoc.id);
+          print('Tarea ${taskDoc.id} borrada exitosamente.');
+        } catch (e) {
+          print(
+            "Error borrando tarea ${taskDoc.id} de la comunidad $communityId: $e. Continuando...",
+          );
+        }
+      }
+    } else {
+      print("No hay tareas para borrar en la comunidad $communityId.");
+    }
+    print(
+      'Proceso de borrado de tareas para la comunidad $communityId completado.',
+    );
+
+    // 4. Borrar la subcolección de miembros
+    print('Borrando miembros de la comunidad $communityId...');
+    QuerySnapshot membersSnapshot = await _firestore
+        .collection('communities')
+        .doc(communityId)
+        .collection('members')
+        .get();
+
+    if (membersSnapshot.docs.isNotEmpty) {
+      WriteBatch membersBatch = _firestore.batch();
+      for (DocumentSnapshot memberDoc in membersSnapshot.docs) {
+        membersBatch.delete(memberDoc.reference);
+      }
+      await membersBatch.commit();
+      print('Miembros de la comunidad $communityId borrados de Firestore.');
+    } else {
+      print("No hay miembros para borrar en la comunidad $communityId.");
+    }
+
+    // 5. Borrar el documento principal de la comunidad
+    print(
+      'Borrando documento principal de la comunidad $communityId de Firestore...',
+    );
+    await _firestore.collection('communities').doc(communityId).delete();
+    print(
+      'Documento principal de la comunidad $communityId borrado de Firestore.',
+    );
+    print('Comunidad $communityId eliminada completamente.');
+  }
+
   void _leaveCommunity() async {
-    // ... (sin cambios en la lógica interna, pero ya usa _isLoading)
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showErrorMessage('Debes iniciar sesión.');
       return;
     }
-    final communityDoc = await FirebaseFirestore.instance
-        .collection('communities')
-        .doc(widget.communityId)
-        .get();
-    if (!communityDoc.exists) {
-      _showErrorMessage('Comunidad no encontrada.');
-      return;
-    }
-    final String? ownerId = communityDoc.get('ownerId');
-    final List<String> memberIds = List<String>.from(
-      communityDoc.get('members') ?? [],
-    );
 
-    if (user.uid == ownerId) {
-      if (memberIds.length == 1) {
-        final bool? confirmDelete = await showDialog<bool>(
+    // No establezcas _isLoading aquí todavía, se hará en las funciones de diálogo
+    // o en _confirmAndDeleteCommunityWrapper si se llega a esa rama.
+
+    try {
+      // 🎯 GESTIONAR TAREAS ANTES DE ABANDONAR
+      // Asumimos que TaskTransferManager.handleUserTasksBeforeLeaving
+      // maneja su propio estado de carga y feedback al usuario si es necesario.
+      // O, si no lo hace, envuélvelo en un setState(() => _isLoading = true/false);
+      // y muestra un diálogo de carga si es una operación larga.
+      // Por ahora, lo dejaremos como está, asumiendo que es suficientemente rápido
+      // o que maneja su propio feedback.
+      final result = await TaskTransferManager.handleUserTasksBeforeLeaving(
+        context: context,
+        communityId: widget.communityId,
+        showSuccessMessage: _showSuccessMessage,
+        showErrorMessage: _showErrorMessage,
+      );
+
+      // Si se canceló la gestión de tareas, no proceder
+      if (result == TaskTransferResult.cancelled) {
+        // Si TaskTransferManager no reseteó _isLoading (si lo usó), hazlo aquí.
+        // if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // ✅ CONTINUAR CON TU LÓGICA ORIGINAL...
+      final communityDoc = await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(widget.communityId)
+          .get();
+
+      // Si la comunidad ya no existe (podría haber sido eliminada mientras tanto)
+      if (!communityDoc.exists) {
+        _showErrorMessage("La comunidad ya no existe.");
+        if (mounted)
+          setState(() => _isLoading = false); // Asegurar reseteo de carga
+        return;
+      }
+
+      final String? ownerId = communityDoc.get('ownerId');
+      final List<String> memberIds = List<String>.from(
+        communityDoc.get('members') ?? [],
+      );
+
+      if (user.uid == ownerId) {
+        if (memberIds.length == 1) {
+          // Si es el único miembro y propietario, el flujo es eliminar la comunidad.
+          // Ya no llamamos a _deleteCommunity() directamente, sino al wrapper.
+          // El wrapper pondrá _isLoading = true.
+          await _confirmAndDeleteCommunityWrapper();
+        } else {
+          // Si es propietario y hay otros miembros, mostrar diálogo para asignar nuevo propietario.
+          // Esta función (_showAssignNewOwnerAndLeaveDialog) debe manejar su propio _isLoading.
+          if (mounted)
+            setState(
+              () => _isLoading = true,
+            ); // Puede ser necesario antes de mostrar diálogo
+          await _showAssignNewOwnerAndLeaveDialog();
+          // _showAssignNewOwnerAndLeaveDialog debería resetear _isLoading en su finally
+          // o aquí deberías hacerlo si la función no lo hace.
+          // if (mounted && !_isLoading) { /* No hacer nada si ya se reseteó */ }
+          // else if (mounted) { setState(() => _isLoading = false); }
+        }
+      } else {
+        // Si no es propietario, mostrar diálogo simple de confirmación para abandonar.
+        final bool? confirm = await showDialog<bool>(
           context: context,
+          barrierDismissible: false,
           builder: (context) => AlertDialog(
             backgroundColor: Theme.of(context).colorScheme.surface,
             shape: RoundedRectangleBorder(
@@ -688,29 +1168,23 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
             ),
             title: Row(
               children: [
-                Icon(Icons.warning, color: Theme.of(context).colorScheme.error),
+                Icon(
+                  Icons.exit_to_app,
+                  color: Theme.of(context).colorScheme.error,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Salir',
+                  '¿Abandonar?',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-            content: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.errorContainer.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'Eres el único miembro y propietario. ¿Deseas eliminarla permanentemente?',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
+            content: Text(
+              '¿Estás seguro de que quieres abandonar la comunidad "${widget.communityName}"?',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             actions: [
@@ -720,6 +1194,7 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                   'Cancelar',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ),
@@ -728,65 +1203,14 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                 style: FilledButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.error,
                 ),
-                child: const Text('Sí, Eliminar'),
+                child: const Text('Sí, Abandonar'),
               ),
             ],
           ),
         );
-        if (confirmDelete == true) _deleteCommunity();
-      } else {
-        _showAssignNewOwnerAndLeaveDialog();
-      }
-    } else {
-      final bool? confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.exit_to_app,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '¿Abandonar?',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            '¿Seguro que quieres abandonar esta comunidad?',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'Cancelar',
-                style: TextStyle(color: Theme.of(context).colorScheme.primary),
-              ),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-              ),
-              child: const Text('Abandonar'),
-            ),
-          ],
-        ),
-      );
-      if (confirm == true) {
-        setState(() => _isLoading = true);
-        try {
+
+        if (confirm == true) {
+          if (mounted) setState(() => _isLoading = true);
           await FirebaseFirestore.instance
               .collection('communities')
               .doc(widget.communityId)
@@ -797,92 +1221,26 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
             _showSuccessMessage('Has abandonado la comunidad.');
             Navigator.of(context).popUntil((route) => route.isFirst);
           }
-        } catch (e) {
-          _showErrorMessage('Error al abandonar: $e');
-        } finally {
-          if (mounted) setState(() => _isLoading = false);
+        } else {
+          // Usuario canceló el abandono, no hay que hacer nada si no se puso _isLoading
         }
       }
-    }
-  }
-
-  // En CommunitySettingsScreen.dart
-
-  Future<void> _deleteCommunity() async {
-    final _firestore = FirebaseFirestore.instance;
-    final communityId = widget.communityId;
-    try {
-      // 1. Obtener el documento de la comunidad
-      DocumentSnapshot communityDoc = await FirebaseFirestore.instance
-          .collection('communities')
-          .doc(communityId)
-          .get();
-
-      if (!communityDoc.exists) {
-        print('Comunidad $communityId no encontrada.');
-        return;
-      }
-
-      // 2. Borrar la imagen de la comunidad (avatar)
-      final communityData = communityDoc.data() as Map<String, dynamic>?;
-      if (communityData != null && communityData.containsKey('imageUrl')) {
-        String? imageUrl = communityData['imageUrl'] as String?;
-        if (imageUrl != null && imageUrl.isNotEmpty) {
-          print('Borrando imagen de comunidad: $imageUrl');
-          bool deleted = await _fileUploadService.deleteFileFromStorageByUrl(
-            imageUrl,
-          );
-          if (deleted) {
-            print('Imagen de comunidad borrada exitosamente.');
-          } else {
-            print(
-              'No se pudo borrar la imagen de la comunidad o ya no existía.',
-            );
-          }
-        }
-      }
-
-      // 3. Borrar todas las tareas y sus archivos asociados
-      print('Borrando tareas de la comunidad $communityId...');
-      QuerySnapshot tasksSnapshot = await _firestore
-          .collection('communities')
-          .doc(communityId)
-          .collection('tasks')
-          .get();
-
-      final taskService = TaskService();
-      for (DocumentSnapshot taskDoc in tasksSnapshot.docs) {
-        print('Borrando tarea ${taskDoc.id} y sus archivos...');
-        await taskService.deleteTask(communityId, taskDoc.id);
-        print('Tarea ${taskDoc.id} borrada.');
-      }
-      print('Todas las tareas de la comunidad $communityId borradas.');
-
-      // 4. Borrar la subcolección de miembros (opcional, pero buena práctica)
-      print('Borrando miembros de la comunidad $communityId...');
-      QuerySnapshot membersSnapshot = await _firestore
-          .collection('communities')
-          .doc(communityId)
-          .collection('members') // Asumiendo que tienes esta subcolección
-          .get();
-
-      WriteBatch membersBatch = _firestore.batch();
-      for (DocumentSnapshot memberDoc in membersSnapshot.docs) {
-        membersBatch.delete(memberDoc.reference);
-      }
-      await membersBatch.commit();
-      print('Miembros de la comunidad $communityId borrados.');
-
-      // 5. Borrar el documento principal de la comunidad
-      print('Borrando documento principal de la comunidad $communityId...');
-      await _firestore.collection('communities').doc(communityId).delete();
-      print('Comunidad $communityId borrada completamente.');
     } catch (e) {
-      print('Error al borrar la comunidad $communityId: $e');
-      // Podrías lanzar una excepción más específica o manejar el error como prefieras
-      throw Exception('No se pudo eliminar la comunidad por completo: $e');
+      _showErrorMessage('Ocurrió un error inesperado: ${e.toString()}');
+    } finally {
+      // Asegurarse de que _isLoading se resetee si no se manejó en una rama específica.
+      // Esto es un "catch-all" por si alguna ruta no reseteó _isLoading.
+      if (mounted && _isLoading) {
+        // Solo si todavía está en true
+        setState(() => _isLoading = false);
+      }
     }
   }
+
+  // ... (resto de tu clase _CommunitySettingsScreenState)
+  // Asegúrate de tener _showSuccessMessage, _showErrorMessage, y
+  // TaskTransferManager.handleUserTasksBeforeLeaving (o su equivalente) definido.
+  // También _showAssignNewOwnerAndLeaveDialog debe existir y manejar su propio estado de carga.
 
   Widget _buildCommunityImageSelector(ThemeData theme) {
     Widget imageToShow;
@@ -1251,36 +1609,6 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
 
                   return CustomScrollView(
                     slivers: [
-                      SliverAppBar(
-                        pinned: true,
-                        backgroundColor:
-                            theme.appBarTheme.backgroundColor ??
-                            theme.colorScheme.surface, // Fallback a surface
-                        elevation: theme.appBarTheme.elevation ?? 0.5,
-                        surfaceTintColor: Colors.transparent,
-                        leading: IconButton(
-                          icon: Icon(
-                            Icons.arrow_back_ios_new,
-                            color:
-                                theme.appBarTheme.foregroundColor ??
-                                theme.colorScheme.onSurface,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                          tooltip: 'Regresar',
-                        ),
-                        centerTitle: true, // Centrar título
-                        title: Text(
-                          widget.communityName,
-                          style:
-                              theme.appBarTheme.titleTextStyle ??
-                              TextStyle(
-                                fontFamily: fontFamilyPrimary,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 20,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                        ),
-                      ),
                       SliverPadding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         sliver: SliverList(
@@ -1491,7 +1819,7 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                 icon: Icons.delete_sweep_outlined,
                                 title: 'Eliminar Comunidad',
                                 subtitle: 'Acción irreversible',
-                                onTap: _deleteCommunity,
+                                onTap: _confirmAndDeleteCommunityWrapper,
                                 isDestructive: true,
                               ),
 

@@ -1,91 +1,12 @@
 // lib/screen/CommunityTasksTabContent.dart - CORREGIDO Y SINCRONIZADO
 import 'package:classroom_mejorado/Screen/TaskDetailScreen.dart';
 import 'package:classroom_mejorado/Screen/NewTaskScreen.dart';
+import 'package:classroom_mejorado/utils/tasks_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:classroom_mejorado/theme/app_typography.dart';
-
-// ✅ Enums exactamente iguales a MyTasksScreen Y TaskDetailScreen
-enum TaskPriority { low, medium, high, urgent }
-
-extension TaskPriorityExtension on TaskPriority {
-  String get name {
-    switch (this) {
-      case TaskPriority.low:
-        return 'Baja';
-      case TaskPriority.medium:
-        return 'Media';
-      case TaskPriority.high:
-        return 'Alta';
-      case TaskPriority.urgent:
-        return 'Urgente';
-    }
-  }
-
-  Color getColor() {
-    switch (this) {
-      case TaskPriority.low:
-        return Colors.green[600]!;
-      case TaskPriority.medium:
-        return Colors.blue[600]!;
-      case TaskPriority.high:
-        return Colors.orange[600]!;
-      case TaskPriority.urgent:
-        return Colors.red[600]!;
-    }
-  }
-
-  IconData getIcon() {
-    switch (this) {
-      case TaskPriority.low:
-        return Icons.keyboard_arrow_down;
-      case TaskPriority.medium:
-        return Icons.remove;
-      case TaskPriority.high:
-        return Icons.keyboard_arrow_up;
-      case TaskPriority.urgent:
-        return Icons.priority_high;
-    }
-  }
-}
-
-// ✅ ENUM CORREGIDO - SINCRONIZADO CON TaskDetailScreen Y MyTasksScreen
-enum TaskState {
-  toDo,
-  doing,
-  underReview,
-  done,
-} // CAMBIO: testing -> underReview
-
-extension TaskStateExtension on TaskState {
-  String get name {
-    switch (this) {
-      case TaskState.toDo:
-        return 'Por hacer';
-      case TaskState.doing:
-        return 'Haciendo';
-      case TaskState.underReview: // ✅ CAMBIO: testing -> underReview
-        return 'Por revisar';
-      case TaskState.done:
-        return 'Hecho';
-    }
-  }
-
-  Color getColor(BuildContext context) {
-    switch (this) {
-      case TaskState.toDo:
-        return Colors.orange[700]!;
-      case TaskState.doing:
-        return Colors.blue[700]!;
-      case TaskState.underReview: // ✅ CAMBIO: testing -> underReview
-        return Colors.purple[700]!;
-      case TaskState.done:
-        return Colors.green[700]!;
-    }
-  }
-}
 
 class CommunityTasksTabContent extends StatefulWidget {
   final String communityId;
@@ -459,7 +380,7 @@ class _CommunityTasksTabContentState extends State<CommunityTasksTabContent> {
                                 ),
                               ),
                               child: Text(
-                                taskState.name,
+                                taskState.displayName,
                                 style: TextStyle(
                                   fontFamily: fontFamilyPrimary,
                                   fontSize: 12,
