@@ -1,0 +1,140 @@
+❯ flutter run
+Launching lib/main.dart on SM A055M in debug mode...
+lib/features/admin/screens/graphic_screen.dart:30:7: Error: The setter '_isLoading' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_isLoading'.
+      _isLoading = true;
+      ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:45:9: Error: The setter '_isLoading' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_isLoading'.
+        _isLoading = false;
+        ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:53:41: Error: The getter '_firestore' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_firestore'.
+      final communitiesSnapshot = await _firestore.collection('communities').get();
+                                        ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:54:7: Error: The setter '_totalCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_totalCommunities'.
+      _totalCommunities = communitiesSnapshot.docs.length;
+      ^^^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:63:7: Error: The setter '_totalUsers' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_totalUsers'.
+      _totalUsers = uniqueUsers.length;
+      ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:72:35: Error: The getter '_firestore' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_firestore'.
+      final tasksSnapshot = await _firestore.collectionGroup('tasks').get();
+                                  ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:73:7: Error: The setter '_totalTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_totalTasks'.
+      _totalTasks = tasksSnapshot.docs.length;
+      ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:76:7: Error: The setter '_activeTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_activeTasks'.
+      _activeTasks = tasksSnapshot.docs.where((doc) {
+      ^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:88:30: Error: The getter '_firestore' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_firestore'.
+      final snapshot = await _firestore
+                             ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:94:7: Error: The setter '_recentCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_recentCommunities'.
+      _recentCommunities = snapshot.docs.map((doc) {
+      ^^^^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:112:30: Error: The getter '_firestore' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_firestore'.
+      final snapshot = await _firestore
+                             ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:118:7: Error: The setter '_topCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing setter, or defining a setter or field named '_topCommunities'.
+      _topCommunities = snapshot.docs.map((doc) {
+      ^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:363:13: Error: The getter '_isLoading' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_isLoading'.
+      body: _isLoading
+            ^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:409:32: Error: The getter '_totalCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_totalCommunities'.
+                        value: _totalCommunities.toString(),
+                               ^^^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:415:32: Error: The getter '_totalUsers' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_totalUsers'.
+                        value: _totalUsers.toString(),
+                               ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:421:32: Error: The getter '_totalTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_totalTasks'.
+                        value: _totalTasks.toString(),
+                               ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:427:32: Error: The getter '_activeTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_activeTasks'.
+                        value: _activeTasks.toString(),
+                               ^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:430:40: Error: The getter '_activeTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_activeTasks'.
+                        subtitle: '${((_activeTasks / (_totalTasks.isZero ? 1 : _totalTasks)) * 100).toStringAsFixed(1)}% del total',
+                                       ^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:430:56: Error: The getter '_totalTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_totalTasks'.
+                        subtitle: '${((_activeTasks / (_totalTasks.isZero ? 1 : _totalTasks)) * 100).toStringAsFixed(1)}% del total',
+                                                       ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:430:81: Error: The getter '_totalTasks' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_totalTasks'.
+                        subtitle: '${((_activeTasks / (_totalTasks.isZero ? 1 : _totalTasks)) * 100).toStringAsFixed(1)}% del total',
+                                                                                ^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:438:23: Error: The getter '_recentCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_recentCommunities'.
+                  if (_recentCommunities.isEmpty)
+                      ^^^^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:460:25: Error: The getter '_recentCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_recentCommunities'.
+                    ...(_recentCommunities.map((community) => _buildCommunityCard(community))),
+                        ^^^^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:465:23: Error: The getter '_topCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_topCommunities'.
+                  if (_topCommunities.isEmpty)
+                      ^^^^^^^^^^^^^^^
+lib/features/admin/screens/graphic_screen.dart:487:25: Error: The getter '_topCommunities' isn't defined for the class '_AdminDashboardScreenState'.
+ - '_AdminDashboardScreenState' is from 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart' ('lib/features/admin/screens/graphic_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named '_topCommunities'.
+                    ...(_topCommunities.map((community) => _buildCommunityCard(community))),
+                        ^^^^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/home/mauchly/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10s
+Running Gradle task 'assembleDebug'...                             10.3s
+Error: Gradle task assembleDebug failed with exit code 1

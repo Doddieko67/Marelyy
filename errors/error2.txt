@@ -1,0 +1,26 @@
+ flutter run --dart-define-from-file=env.json
+Launching lib/main.dart on 2201116PG in debug mode...
+lib/features/communities/services/community_service.dart:535:16: Error: 'removeMember' is already declared in this scope.
+  Future<bool> removeMember(String communityId, String userIdToRemove) async {
+               ^^^^^^^^^^^^
+lib/features/communities/services/community_service.dart:312:16: Context: Previous declaration of 'removeMember'.
+  Future<void> removeMember(String communityId, String userId) async {
+               ^^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/home/mauchly/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 3s
+Running Gradle task 'assembleDebug'...                              3.5s
+Error: Gradle task assembleDebug failed with exit code 1

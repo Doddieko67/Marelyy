@@ -1,0 +1,331 @@
+❯ flutter run --dart-define-from-file=env.json
+Launching lib/main.dart on 2201116PG in debug mode...
+Running Gradle task 'assembleDebug'...                           2,609ms
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...           4.3s
+I/flutter ( 8482): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(61)] Using the Impeller rendering backend (Vulkan).
+I/flutter ( 8482): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(61)] Using the Impeller rendering backend (Vulkan).
+I/flutter ( 8482): User granted permission: AuthorizationStatus.authorized
+I/Choreographer( 8482): Skipped 38 frames!  The application may be doing too much work on its main thread.
+W/Looper  ( 8482): PerfMonitor doFrame : time=0ms vsyncFrame=0 latency=644ms procState=-1 historyMsgCount=2
+I/FLTFireMsgService( 8482): FlutterFirebaseMessagingBackgroundService started!
+I/flutter ( 8482): User is signed in!
+I/flutter ( 8482): Redirigiendo a /main (AppShell)
+Syncing files to device 2201116PG...                                94ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on 2201116PG is available at: http://127.0.0.1:36293/lgAwYkwb2iY=/
+The Flutter DevTools debugger and profiler on 2201116PG is available at:
+http://127.0.0.1:9101?uri=http://127.0.0.1:36293/lgAwYkwb2iY=/
+I/Choreographer( 8482): Skipped 92 frames!  The application may be doing too much work on its main thread.
+D/VRI[MainActivity]( 8482): vri.Setup new sync id=0 syncSeqId=0
+D/ssroom_mejorado( 8482): MiuiProcessManagerServiceStub setSchedFifo
+I/MiuiProcessManagerImpl( 8482): setSchedFifo pid:8482, mode:3
+E/libEGL  ( 8482): pre_cache appList: com.sina.weibo,com.ss.android.article.news,com.taobao.taobao,com.smile.gifmaker,com.ss.android.ugc.aweme,com.tencent.mm,tv.danmaku.bili,,
+E/perf_hint( 8482): Session creation failed, mPreferredRateNanos: -1
+W/Looper  ( 8482): PerfMonitor doFrame : time=24ms vsyncFrame=0 latency=1546ms procState=-1 historyMsgCount=3
+D/VRI[MainActivity]( 8482): vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:4081 android.view.ViewRootImpl$$ExternalSyntheticLambda2.run:6 android.os.Handler.handleCallback:942 android.os.Handler.dispatchMessage:99 android.os.Looper.loopOnce:211 
+I/OpenGLRenderer( 8482): Davey! duration=1567ms; Flags=1, FrameTimelineVsyncId=5799049, IntendedVsync=19041232753362, Vsync=19042769878690, InputEventId=0, HandleInputStart=19042778793411, AnimationStart=19042778794869, PerformTraversalsStart=19042778795598, DrawStart=19042779538202, FrameDeadline=19041249420028, FrameInterval=19042778602890, FrameStartTime=16707884, SyncQueued=19042781605234, SyncStart=19042781841380, IssueDrawCommandsStart=19042787305442, SwapBuffers=19042798682421, FrameCompleted=19042800839348, DequeueBufferDuration=2505520, QueueBufferDuration=1675416, GpuCompleted=19042800766848, SwapBuffersCompleted=19042800839348, DisplayPresentTime=0, CommandSubmissionCompleted=19042798682421, 
+W/DynamiteModule( 8482): Local module descriptor class for com.google.android.gms.providerinstaller.dynamite not found.
+W/OnBackInvokedCallback( 8482): OnBackInvokedCallback is not enabled for the application.
+W/OnBackInvokedCallback( 8482): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/DynamiteModule( 8482): Considering local module com.google.android.gms.providerinstaller.dynamite:0 and remote module com.google.android.gms.providerinstaller.dynamite:0
+W/ProviderInstaller( 8482): Failed to load providerinstaller module: No acceptable module com.google.android.gms.providerinstaller.dynamite found. Local version is 0 and remote version is 0.
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus true
+I/HandWritingStubImpl( 8482): refreshLastKeyboardType: 1
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+D/nativeloader( 8482): Configuring clns-5 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/lib/arm64:/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader( 8482): Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:liblistenjni.qti.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so
+D/nativeloader( 8482): Configuring clns-6 for other apk /system/framework/com.android.media.remotedisplay.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/lib/arm64:/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader( 8482): Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:liblistenjni.qti.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so
+W/ssroom_mejorado( 8482): Loading /data/misc/apexdata/com.android.art/dalvik-cache/arm64/system@framework@com.android.location.provider.jar@classes.odex non-executable as it requires an image which we failed to load
+D/nativeloader( 8482): Configuring clns-7 for other apk /system/framework/com.android.location.provider.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/lib/arm64:/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader( 8482): Extending system_exposed_libraries: libbinauralrenderer_wrapper.qti.so:libhoaeffects.qti.so:libQOC.qti.so:libmisys_jni.xiaomi.so:libupdateprof.qti.so:libthermalclient.qti.so:libQOC.qti.so:libdiag_system.qti.so:libqape.qti.so:liblistenjni.qti.so:libxiaomi_modemdumpsdx55_jni.modem.so:libxiaomi_modemdump_jni.modem.so
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+D/nativeloader( 8482): Configuring clns-8 for other apk /data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/lib/arm64:/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+W/ProviderInstaller( 8482): Failed to report request stats: com.google.android.gms.common.security.ProviderInstallerImpl.reportRequestStats [class android.content.Context, long, long]
+W/ssroom_mejorado( 8482): Accessing hidden method Ldalvik/system/VMStack;->getStackClass2()Ljava/lang/Class; (unsupported, reflection, allowed)
+E/GoogleApiManager( 8482): Failed to get service from broker. 
+E/GoogleApiManager( 8482): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager( 8482): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3033)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.createException(Parcel.java:3017)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.readException(Parcel.java:3000)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.readException(Parcel.java:2942)
+E/GoogleApiManager( 8482): 	at axtl.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+E/GoogleApiManager( 8482): 	at axrs.z(:com.google.android.gms@252234029@25.22.34 (190400-769260661):143)
+E/GoogleApiManager( 8482): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):42)
+E/GoogleApiManager( 8482): 	at android.os.Handler.handleCallback(Handler.java:942)
+E/GoogleApiManager( 8482): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/GoogleApiManager( 8482): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+E/GoogleApiManager( 8482): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+E/GoogleApiManager( 8482): 	at android.os.Looper.loopOnce(Looper.java:211)
+E/GoogleApiManager( 8482): 	at android.os.Looper.loop(Looper.java:300)
+E/GoogleApiManager( 8482): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+W/FlagRegistrar( 8482): Failed to register com.google.android.gms.providerinstaller#com.example.classroom_mejorado
+W/FlagRegistrar( 8482): fghm: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar( 8482): 	at fgho.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):13)
+W/FlagRegistrar( 8482): 	at gbtj.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):3)
+W/FlagRegistrar( 8482): 	at gbtl.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):130)
+W/FlagRegistrar( 8482): 	at gbvs.execute(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar( 8482): 	at gbtt.f(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar( 8482): 	at gbtt.m(:com.google.android.gms@252234029@25.22.34 (190400-769260661):99)
+W/FlagRegistrar( 8482): 	at gbtt.r(:com.google.android.gms@252234029@25.22.34 (190400-769260661):17)
+W/FlagRegistrar( 8482): 	at eyqj.hX(:com.google.android.gms@252234029@25.22.34 (190400-769260661):35)
+W/FlagRegistrar( 8482): 	at emvm.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):12)
+W/FlagRegistrar( 8482): 	at gbvs.execute(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar( 8482): 	at emvn.b(:com.google.android.gms@252234029@25.22.34 (190400-769260661):18)
+W/FlagRegistrar( 8482): 	at emwc.b(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+W/FlagRegistrar( 8482): 	at emwe.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):25)
+W/FlagRegistrar( 8482): 	at awwd.c(:com.google.android.gms@252234029@25.22.34 (190400-769260661):9)
+W/FlagRegistrar( 8482): 	at awyt.q(:com.google.android.gms@252234029@25.22.34 (190400-769260661):48)
+W/FlagRegistrar( 8482): 	at awyt.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):10)
+W/FlagRegistrar( 8482): 	at awyt.g(:com.google.android.gms@252234029@25.22.34 (190400-769260661):185)
+W/FlagRegistrar( 8482): 	at awyt.onConnectionFailed(:com.google.android.gms@252234029@25.22.34 (190400-769260661):2)
+W/FlagRegistrar( 8482): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):70)
+W/FlagRegistrar( 8482): 	at android.os.Handler.handleCallback(Handler.java:942)
+W/FlagRegistrar( 8482): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+W/FlagRegistrar( 8482): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar( 8482): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+W/FlagRegistrar( 8482): 	at android.os.Looper.loopOnce(Looper.java:211)
+W/FlagRegistrar( 8482): 	at android.os.Looper.loop(Looper.java:300)
+W/FlagRegistrar( 8482): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+W/FlagRegistrar( 8482): Caused by: awur: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar( 8482): 	at axre.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):15)
+W/FlagRegistrar( 8482): 	at awwg.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar( 8482): 	at awwd.c(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+W/FlagRegistrar( 8482): 	... 12 more
+D/nativeloader( 8482): Load /data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk!/lib/arm64-v8a/libconscrypt_gmscore_jni.so using ns clns-8 from class loader (caller=/data/app/~~jpZfVZdWMnin-KGyaobcPg==/com.google.android.gms-zQMpQPent3j9yMNtg_4_-g==/base.apk): ok
+V/NativeCrypto( 8482): Registering com/google/android/gms/org/conscrypt/NativeCrypto's 315 native methods...
+W/ssroom_mejorado( 8482): Accessing hidden method Ljava/security/spec/ECParameterSpec;->getCurveName()Ljava/lang/String; (unsupported, reflection, allowed)
+I/ProviderInstaller( 8482): Installed default security provider GmsCore_OpenSSL
+W/ssroom_mejorado( 8482): Accessing hidden field Ljava/net/Socket;->impl:Ljava/net/SocketImpl; (unsupported, reflection, allowed)
+W/ssroom_mejorado( 8482): Accessing hidden method Ljava/security/spec/ECParameterSpec;->setCurveName(Ljava/lang/String;)V (unsupported, reflection, allowed)
+I/flutter ( 8482): Token saved to database: fKmXmWKDQW-LPAiKOtqdSK:APA91bHKrCfRQTKxs64wCDA9ysLJGyo4RHHSO9hE8V5q6jNtY0S7VFmVKR4SV8ZHILNxVPrHocmFGm7_LlyFnq8zfsEKp_f56_PBAZayetc04IlhrJDTjVU for user H5r0I2B77PWVdA9yjdgFkEvtwEl1
+I/flutter ( 8482): FCM Token: fKmXmWKDQW-LPAiKOtqdSK:APA91bHKrCfRQTKxs64wCDA9ysLJGyo4RHHSO9hE8V5q6jNtY0S7VFmVKR4SV8ZHILNxVPrHocmFGm7_LlyFnq8zfsEKp_f56_PBAZayetc04IlhrJDTjVU
+D/ProfileInstaller( 8482): Installing profile for com.example.classroom_mejorado
+W/MirrorManager( 8482): this model don't Support
+I/flutter ( 8482): FirebaseNotificationService: Active chat community ID set to -> perros_1749346459287
+I/flutter ( 8482): Cleared chat notifications for community: perros_1749346459287 (tag: chat_perros_1749346459287)
+I/flutter ( 8482): Cleared chat notifications for community: perros_1749346459287 (tag: chat_perros_1749346459287)
+D/CompatibilityChangeReporter( 8482): Compat change id reported: 160794467; UID 10365; state: ENABLED
+I/HandWritingStubImpl( 8482): refreshLastKeyboardType: 1
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+D/InputMethodManager( 8482): showSoftInput() view=io.flutter.embedding.android.FlutterView{e8259ea VFE...... .F....ID 0,0-1080,2356 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+D/InputMethodManager( 8482): showSoftInput() view=io.flutter.embedding.android.FlutterView{e8259ea VFE...... .F....ID 0,0-1080,2356 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+I/AssistStructure( 8482): Flattened final assist data: 508 bytes, containing 1 windows, 3 views
+D/InputConnectionAdaptor( 8482): The input method toggled cursor monitoring on
+W/OnBackInvokedCallback( 8482): OnBackInvokedCallback is not enabled for the application.
+W/OnBackInvokedCallback( 8482): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+D/InsetsController( 8482): show(ime(), fromIme=true)
+E/GoogleApiManager( 8482): Failed to get service from broker. 
+E/GoogleApiManager( 8482): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager( 8482): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3033)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.createException(Parcel.java:3017)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.readException(Parcel.java:3000)
+E/GoogleApiManager( 8482): 	at android.os.Parcel.readException(Parcel.java:2942)
+E/GoogleApiManager( 8482): 	at axtl.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+E/GoogleApiManager( 8482): 	at axrs.z(:com.google.android.gms@252234029@25.22.34 (190400-769260661):143)
+E/GoogleApiManager( 8482): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):42)
+E/GoogleApiManager( 8482): 	at android.os.Handler.handleCallback(Handler.java:942)
+E/GoogleApiManager( 8482): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/GoogleApiManager( 8482): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+E/GoogleApiManager( 8482): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+E/GoogleApiManager( 8482): 	at android.os.Looper.loopOnce(Looper.java:211)
+E/GoogleApiManager( 8482): 	at android.os.Looper.loop(Looper.java:300)
+E/GoogleApiManager( 8482): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+W/RenderInspector( 8482): QueueBuffer time out on com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity, count=1, avg=21 ms, max=21 ms.
+D/InputConnectionAdaptor( 8482): The input method toggled cursor monitoring off
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus false
+W/MiuiMagicPointerUtilsStubHeadImpl( 8482): MiuiMagicPointerUtilsStubHeadImpl has been initialized !!
+I/ForceDarkHelperStubImpl( 8482): setViewRootImplForceDark: false for com.example.classroom_mejorado.MainActivity@2160c8b, reason: AppDarkModeEnable
+D/CompatibilityChangeReporter( 8482): Compat change id reported: 78294732; UID 10365; state: ENABLED
+I/AdrenoGLES-0( 8482): QUALCOMM build                   : 3e33337ce3, I07ee46fc66
+I/AdrenoGLES-0( 8482): Build Date                       : 10/08/21
+I/AdrenoGLES-0( 8482): OpenGL ES Shader Compiler Version: EV031.35.01.10
+I/AdrenoGLES-0( 8482): Local Branch                     : 
+I/AdrenoGLES-0( 8482): Remote Branch                    : 
+I/AdrenoGLES-0( 8482): Remote Branch                    : 
+I/AdrenoGLES-0( 8482): Reconstruct Branch               : 
+I/AdrenoGLES-0( 8482): Build Config                     : S P 10.0.7 AArch64
+I/AdrenoGLES-0( 8482): Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+I/AdrenoGLES-0( 8482): PFP: 0x016ee201, ME: 0x00000000
+E/qdgralloc( 8482): GetGpuPixelFormat: No map for format: 0x38
+E/AdrenoUtils( 8482): <validate_memory_layout_input_parmas:1970>: Unknown Format 0
+E/AdrenoUtils( 8482): <adreno_init_memory_layout:4720>: Memory Layout input parameter validation failed!
+E/qdgralloc( 8482): GetGpuResourceSizeAndDimensions Graphics metadata init failed
+E/Gralloc4( 8482): isSupported(1, 1, 56, 1, ...) failed with 1
+E/GraphicBufferAllocator( 8482): Failed to allocate (4 x 4) layerCount 1 format 56 usage b00: 1
+E/AHardwareBuffer( 8482): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -1), handle=0x0
+E/qdgralloc( 8482): GetGpuPixelFormat: No map for format: 0x38
+E/AdrenoUtils( 8482): <validate_memory_layout_input_parmas:1970>: Unknown Format 0
+E/AdrenoUtils( 8482): <adreno_init_memory_layout:4720>: Memory Layout input parameter validation failed!
+E/qdgralloc( 8482): GetGpuResourceSizeAndDimensions Graphics metadata init failed
+E/Gralloc4( 8482): isSupported(1, 1, 56, 1, ...) failed with 1
+E/GraphicBufferAllocator( 8482): Failed to allocate (4 x 4) layerCount 1 format 56 usage b00: 1
+E/AHardwareBuffer( 8482): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -1), handle=0x0
+E/libEGL  ( 8482): pre_cache appList: com.sina.weibo,com.ss.android.article.news,com.taobao.taobao,com.smile.gifmaker,com.ss.android.ugc.aweme,com.tencent.mm,tv.danmaku.bili,,
+D/VRI[MainActivity]( 8482): vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4013 android.view.ViewRootImpl.doTraversal:2725 android.view.ViewRootImpl$TraversalRunnable.run:9812 android.view.Choreographer$CallbackRecord.run:1505 android.view.Choreographer$CallbackRecord.run:1513 
+D/SurfaceView( 8482): UPDATE Surface(name=SurfaceView[com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity])/@0x305fab5, mIsProjectionMode = false
+D/VRI[MainActivity]( 8482): vri.Setup new sync id=1 syncSeqId=0
+D/VRI[MainActivity]( 8482): vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:4081 android.view.ViewRootImpl$$ExternalSyntheticLambda2.run:6 android.os.Handler.handleCallback:942 android.os.Handler.dispatchMessage:99 android.os.Looper.loopOnce:211 
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus true
+I/HandWritingStubImpl( 8482): refreshLastKeyboardType: 1
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus false
+W/Looper  ( 8482): PerfMonitor doFrame : time=772ms vsyncFrame=0 latency=1ms procState=-1
+W/Looper  ( 8482): PerfMonitor looperActivity : package=com.example.classroom_mejorado/.MainActivity time=22ms latency=777ms  procState=-1  historyMsgCount=2 (msgIndex=1 wall=772ms seq=332 late=1ms h=android.view.Choreographer$FrameHandler c=android.view.Choreographer$FrameDisplayEventReceiver)
+I/ForceDarkHelperStubImpl( 8482): setViewRootImplForceDark: false for com.example.classroom_mejorado.MainActivity@2160c8b, reason: AppDarkModeEnable
+I/AdrenoGLES-0( 8482): QUALCOMM build                   : 3e33337ce3, I07ee46fc66
+I/AdrenoGLES-0( 8482): Build Date                       : 10/08/21
+I/AdrenoGLES-0( 8482): OpenGL ES Shader Compiler Version: EV031.35.01.10
+I/AdrenoGLES-0( 8482): Local Branch                     : 
+I/AdrenoGLES-0( 8482): Remote Branch                    : 
+I/AdrenoGLES-0( 8482): Remote Branch                    : 
+I/AdrenoGLES-0( 8482): Reconstruct Branch               : 
+I/AdrenoGLES-0( 8482): Build Config                     : S P 10.0.7 AArch64
+I/AdrenoGLES-0( 8482): Driver Path                      : /vendor/lib64/egl/libGLESv2_adreno.so
+I/AdrenoGLES-0( 8482): PFP: 0x016ee201, ME: 0x00000000
+E/qdgralloc( 8482): GetGpuPixelFormat: No map for format: 0x38
+E/AdrenoUtils( 8482): <validate_memory_layout_input_parmas:1970>: Unknown Format 0
+E/AdrenoUtils( 8482): <adreno_init_memory_layout:4720>: Memory Layout input parameter validation failed!
+E/qdgralloc( 8482): GetGpuResourceSizeAndDimensions Graphics metadata init failed
+E/Gralloc4( 8482): isSupported(1, 1, 56, 1, ...) failed with 1
+E/GraphicBufferAllocator( 8482): Failed to allocate (4 x 4) layerCount 1 format 56 usage b00: 1
+E/AHardwareBuffer( 8482): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -1), handle=0x0
+E/qdgralloc( 8482): GetGpuPixelFormat: No map for format: 0x38
+E/AdrenoUtils( 8482): <validate_memory_layout_input_parmas:1970>: Unknown Format 0
+E/AdrenoUtils( 8482): <adreno_init_memory_layout:4720>: Memory Layout input parameter validation failed!
+E/qdgralloc( 8482): GetGpuResourceSizeAndDimensions Graphics metadata init failed
+E/Gralloc4( 8482): isSupported(1, 1, 56, 1, ...) failed with 1
+E/GraphicBufferAllocator( 8482): Failed to allocate (4 x 4) layerCount 1 format 56 usage b00: 1
+E/AHardwareBuffer( 8482): GraphicBuffer(w=4, h=4, lc=1) failed (Unknown error -1), handle=0x0
+E/libEGL  ( 8482): pre_cache appList: com.sina.weibo,com.ss.android.article.news,com.taobao.taobao,com.smile.gifmaker,com.ss.android.ugc.aweme,com.tencent.mm,tv.danmaku.bili,,
+D/VRI[MainActivity]( 8482): vri.reportNextDraw android.view.ViewRootImpl.performTraversals:4013 android.view.ViewRootImpl.doTraversal:2725 android.view.ViewRootImpl$TraversalRunnable.run:9812 android.view.Choreographer$CallbackRecord.run:1505 android.view.Choreographer$CallbackRecord.run:1513 
+D/SurfaceView( 8482): UPDATE Surface(name=SurfaceView[com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity])/@0xed5449b, mIsProjectionMode = false
+D/VRI[MainActivity]( 8482): vri.Setup new sync id=2 syncSeqId=0
+W/Looper  ( 8482): PerfMonitor doFrame : time=390ms vsyncFrame=0 latency=12ms procState=-1 historyMsgCount=2
+D/VRI[MainActivity]( 8482): vri.reportDrawFinished syncSeqId=0 android.view.ViewRootImpl.lambda$createSyncIfNeeded$4$android-view-ViewRootImpl:4081 android.view.ViewRootImpl$$ExternalSyntheticLambda2.run:6 android.os.Handler.handleCallback:942 android.os.Handler.dispatchMessage:99 android.os.Looper.loopOnce:211 
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus true
+I/HandWritingStubImpl( 8482): refreshLastKeyboardType: 1
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+W/BpBinder( 8482): PerfMonitor binderTransact :  time=572ms interface=android.content.IContentProvider code=21
+D/MediaScannerConnection( 8482): Scanned /data/user/0/com.example.classroom_mejorado/cache/6d06db40-84a7-4b64-91be-7e5961ea014c2598848146620064370.jpg to null
+W/StorageUtil( 8482): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+D/UploadTask( 8482): Waiting 0 milliseconds
+W/StorageUtil( 8482): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+D/UploadTask( 8482): Increasing chunk size to 524288
+D/UploadTask( 8482): Waiting 0 milliseconds
+W/StorageUtil( 8482): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+D/UploadTask( 8482): Increasing chunk size to 1048576
+D/UploadTask( 8482): Waiting 0 milliseconds
+W/StorageUtil( 8482): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+W/StorageTask( 8482): unable to change internal state to: INTERNAL_STATE_CANCELED, INTERNAL_STATE_CANCELING isUser: true from state:INTERNAL_STATE_SUCCESS
+W/StorageUtil( 8482): Error getting App Check token; using placeholder token instead. Error: com.google.firebase.FirebaseException: No AppCheckProvider installed.
+I/flutter ( 8482): Error analizando imagen: API key not valid. Please pass a valid API key.
+I/flutter ( 8482): FirebaseNotificationService: Active chat community ID set to -> null
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus false
+D/DecorView[]( 8482): onWindowFocusChanged hasWindowFocus true
+I/HandWritingStubImpl( 8482): refreshLastKeyboardType: 1
+I/HandWritingStubImpl( 8482): getCurrentKeyboardType: 1
+D/MIUIInput( 8482): [KeyEvent] ViewRootImpl windowName 'com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity', KeyEvent { action=ACTION_DOWN, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x48, repeatCount=0, eventTime=19200380000000, downTime=19200380000000, deviceId=-1, source=0x101, displayId=-1 }, phoneEventTime=23:26:35.754
+D/MIUIInput( 8482): [KeyEvent] ViewRootImpl windowName 'com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity', KeyEvent { action=ACTION_UP, keyCode=KEYCODE_BACK, scanCode=0, metaState=0, flags=0x48, repeatCount=0, eventTime=19200391000000, downTime=19200391000000, deviceId=-1, source=0x101, displayId=-1 }, phoneEventTime=23:26:35.764
+
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following LateError was thrown building KeyedSubtree-[<0>]:
+LateInitializationError: Field '_model@55311059' has already been initialized.
+
+The relevant error-causing widget was:
+  TabBarView
+  TabBarView:file:///home/mauchly/codes/clasrum/classroom_mejorado/lib/features/communities/screens/co
+  mmunity_detail_screen.dart:206:26
+
+When the exception was thrown, this was the stack:
+#0      LateError._throwFieldAlreadyInitialized (dart:_internal-patch/internal_patch.dart:209:5)
+#1      AIFileService._model= (package:classroom_mejorado/core/services/ai_file_service.dart)
+#2      AIFileService.initialize (package:classroom_mejorado/core/services/ai_file_service.dart:26:5)
+#3      _CommunityChatTabContentState.initState
+(package:classroom_mejorado/features/communities/screens/community_chat_tab_content.dart:46:20)
+#4      StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5842:55)
+#5      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5691:5)
+...     Normal element mounting (50 frames)
+#55     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4539:16)
+#56     Element.updateChild (package:flutter/src/widgets/framework.dart:4004:18)
+#57     SliverMultiBoxAdaptorElement.updateChild (package:flutter/src/widgets/sliver.dart:1000:37)
+#58     SliverMultiBoxAdaptorElement.createChild.<anonymous closure>
+(package:flutter/src/widgets/sliver.dart:984:20)
+#59     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3046:19)
+#60     SliverMultiBoxAdaptorElement.createChild (package:flutter/src/widgets/sliver.dart:975:12)
+#61     RenderSliverMultiBoxAdaptor._createOrObtainChild.<anonymous closure>
+(package:flutter/src/rendering/sliver_multi_box_adaptor.dart:372:23)
+#62     RenderObject.invokeLayoutCallback.<anonymous closure>
+(package:flutter/src/rendering/object.dart:2941:17)
+#63     PipelineOwner._enableMutationsToDirtySubtrees
+(package:flutter/src/rendering/object.dart:1209:15)
+#64     RenderObject.invokeLayoutCallback (package:flutter/src/rendering/object.dart:2940:14)
+#65     RenderSliverMultiBoxAdaptor._createOrObtainChild
+(package:flutter/src/rendering/sliver_multi_box_adaptor.dart:360:5)
+#66     RenderSliverMultiBoxAdaptor.addInitialChild
+(package:flutter/src/rendering/sliver_multi_box_adaptor.dart:460:5)
+#67     RenderSliverFixedExtentBoxAdaptor.performLayout
+(package:flutter/src/rendering/sliver_fixed_extent_list.dart:319:12)
+#68     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#69     RenderSliverEdgeInsetsPadding.performLayout
+(package:flutter/src/rendering/sliver_padding.dart:133:12)
+#70     _RenderSliverFractionalPadding.performLayout
+(package:flutter/src/widgets/sliver_fill.dart:162:11)
+#71     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#72     RenderViewportBase.layoutChildSequence (package:flutter/src/rendering/viewport.dart:611:13)
+#73     RenderViewport._attemptLayout (package:flutter/src/rendering/viewport.dart:1592:12)
+#74     RenderViewport.performLayout (package:flutter/src/rendering/viewport.dart:1483:20)
+#75     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#76     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#77     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#78     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#79     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#80     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#81     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#82     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#83     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#84     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#85     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#86     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#87     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#88     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#89     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#90     RenderProxyBoxMixin.performLayout (package:flutter/src/rendering/proxy_box.dart:115:18)
+#91     _RenderCustomClip.performLayout (package:flutter/src/rendering/proxy_box.dart:1483:11)
+#92     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#93     ChildLayoutHelper.layoutChild (package:flutter/src/rendering/layout_helper.dart:62:11)
+#94     RenderFlex._computeSizes (package:flutter/src/rendering/flex.dart:1202:26)
+#95     RenderFlex.performLayout (package:flutter/src/rendering/flex.dart:1255:32)
+#96     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#97     RenderPadding.performLayout (package:flutter/src/rendering/shifted_box.dart:243:12)
+#98     RenderObject.layout (package:flutter/src/rendering/object.dart:2822:7)
+#99     MultiChildLayoutDelegate.layoutChild (package:flutter/src/rendering/custom_layout.dart:180:12)
+#100    _ScaffoldLayout.performLayout (package:flutter/src/material/scaffold.dart:1118:7)
+#101    MultiChildLayoutDelegate._callPerformLayout
+(package:flutter/src/rendering/custom_layout.dart:249:7)
+#102    RenderCustomMultiChildLayoutBox.performLayout
+(package:flutter/src/rendering/custom_layout.dart:419:14)
+#103    RenderObject._layoutWithoutResize (package:flutter/src/rendering/object.dart:2655:7)
+#104    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1160:18)
+#105    PipelineOwner.flushLayout (package:flutter/src/rendering/object.dart:1173:15)
+#106    RendererBinding.drawFrame (package:flutter/src/rendering/binding.dart:629:23)
+#107    WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1242:13)
+#108    RendererBinding._handlePersistentFrameCallback
+(package:flutter/src/rendering/binding.dart:495:5)
+#109    SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1438:15)
+#110    SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1351:9)
+#111    SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1204:5)
+#112    _invoke (dart:ui/hooks.dart:331:13)
+#113    PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)
+#114    _drawFrame (dart:ui/hooks.dart:303:31)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════

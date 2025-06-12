@@ -1,0 +1,7 @@
+hola claude, se que eres un excelente programador, eso te lo reconozco, por eso te pido:
+1. Que las chats de comunidades permitan subir imagenes o archivos
+2. Que no solamente se permita un admin, tambien varios admins de una comunidad 
+3. Antes de cambiar o eliminar la foto, estos se mueven a una carpeta llamada "basura" o algo asi y quiero que les agregues metadatos de su id y correo 
+4. los admins reciben siempre notificaciones de cuando las tareas pasan a "por revisar"
+5. Las imagenes y archivos de las chats de comunidades deben ser entendidas por la IA 
+

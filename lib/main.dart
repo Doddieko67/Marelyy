@@ -1,17 +1,18 @@
-import 'package:classroom_mejorado/Screen/AuthScreen.dart';
-import 'package:classroom_mejorado/Screen/CommunityChatTabContent.dart';
-import 'package:classroom_mejorado/Screen/TaskDetailScreen.dart';
-import 'package:classroom_mejorado/Screen/app_shell.dart';
-import 'package:classroom_mejorado/function/animations.dart';
-import 'package:classroom_mejorado/services/firebase_notification_service.dart';
+import 'package:classroom_mejorado/features/auth/screens/auth_screen.dart';
+import 'package:classroom_mejorado/features/communities/screens/community_chat_tab_content.dart';
+import 'package:classroom_mejorado/features/tasks/screens/task_detail_screen.dart';
+import 'package:classroom_mejorado/shared/navigation/app_shell.dart';
+import 'package:classroom_mejorado/core/utils/animations.dart';
+import 'package:classroom_mejorado/core/services/firebase_notification_service.dart';
+import 'package:classroom_mejorado/core/providers/app_providers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'package:classroom_mejorado/firebase_options.dart';
-import 'package:classroom_mejorado/theme/app_colors.dart';
-import 'package:classroom_mejorado/theme/app_typography.dart';
+import 'package:classroom_mejorado/core/constants/app_colors.dart';
+import 'package:classroom_mejorado/core/constants/app_typography.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -214,16 +215,17 @@ class MyApp extends StatelessWidget {
       ),
     );
 
-    return MaterialApp(
-      title: 'Taskify App',
-      navigatorKey: FirebaseNotificationService.navigatorKey,
-      // ***** REGRESA ESTO A CÓMO ESTABA *****
-      initialRoute: FirebaseAuth.instance.currentUser != null
-          ? '/main'
-          : '/login',
+    return AppProviders(
+      child: MaterialApp(
+        title: 'Taskify App',
+        navigatorKey: FirebaseNotificationService.navigatorKey,
+        // ***** REGRESA ESTO A CÓMO ESTABA *****
+        initialRoute: FirebaseAuth.instance.currentUser != null
+            ? '/main'
+            : '/login',
 
-      // ************************************
-      onGenerateRoute: (settings) {
+        // ************************************
+        onGenerateRoute: (settings) {
         // ***** ELIMINA EL CASE '/' DE AQUÍ *****
         // if (settings.name == '/') {
         //   return MaterialPageRoute(
@@ -286,9 +288,10 @@ class MyApp extends StatelessWidget {
           ),
         );
       },
-      themeMode: ThemeMode.dark,
-      darkTheme: appDarkTheme,
-      debugShowCheckedModeBanner: false,
+        themeMode: ThemeMode.dark,
+        darkTheme: appDarkTheme,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
