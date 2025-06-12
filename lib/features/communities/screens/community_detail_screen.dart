@@ -29,6 +29,12 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
   @override
   void initState() {
     super.initState();
+    // Initialize with default 5 tabs (for regular members)
+    _tabController = TabController(
+      length: 5,
+      vsync: this,
+    );
+    
     _checkUserPermissions();
 
     _communityDetailsStream = FirebaseFirestore.instance
@@ -40,7 +46,12 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
   Future<void> _checkUserPermissions() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        setState(() {
+          _isLoadingPermissions = false;
+        });
+        return;
+      }
 
       final memberDoc = await FirebaseFirestore.instance
           .collection('communities')
@@ -51,17 +62,21 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
 
       if (memberDoc.exists) {
         final role = memberDoc.data()?['role'] ?? 'member';
+        final newIsAdmin = role == 'owner' || role == 'admin';
+        
         setState(() {
-          _isAdmin = role == 'owner' || role == 'admin';
+          _isAdmin = newIsAdmin;
           _isLoadingPermissions = false;
         });
 
-        // Recreate TabController with correct length
-        _tabController.dispose();
-        _tabController = TabController(
-          length: _isAdmin ? 6 : 5, // 6 tabs for admins, 5 for regular members
-          vsync: this,
-        );
+        // Only recreate TabController if admin status changed
+        if (newIsAdmin) {
+          _tabController.dispose();
+          _tabController = TabController(
+            length: 6, // 6 tabs for admins
+            vsync: this,
+          );
+        }
       } else {
         setState(() {
           _isLoadingPermissions = false;
