@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Importa para interactuar con Firestore
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
+import 'package:classroom_mejorado/core/utils/permission_checker.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/features/communities/screens/community_chat_tab_content.dart';
 import 'package:classroom_mejorado/features/communities/screens/community_tasks_tab_content.dart';
@@ -73,10 +74,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
       if (!snapshot.exists || !mounted) return;
 
       final communityData = snapshot.data() as Map<String, dynamic>;
-      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
-      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
-      
-      final newIsAdmin = ownerIds.contains(user.uid) || adminIds.contains(user.uid);
+      final newIsAdmin = PermissionChecker.isAdmin(user.uid, communityData);
       
       // Solo actualizar si realmente cambió
       if (_isAdmin != newIsAdmin) {
@@ -113,11 +111,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
       }
 
       final communityData = communityDoc.data() as Map<String, dynamic>;
-      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
-      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
-      
-      // El usuario es admin si está en la lista de owners O en la lista de admins
-      final newIsAdmin = ownerIds.contains(user.uid) || adminIds.contains(user.uid);
+      // Usar PermissionChecker para determinar si es admin
+      final newIsAdmin = PermissionChecker.isAdmin(user.uid, communityData);
       
       setState(() {
         _isAdmin = newIsAdmin;

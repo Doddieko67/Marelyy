@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
+import 'package:classroom_mejorado/features/admin/screens/member_detail_screen.dart';
+import 'package:classroom_mejorado/features/communities/widgets/user_avatar_widget.dart';
+import 'package:classroom_mejorado/features/communities/widgets/role_badge_widget.dart';
 import 'package:intl/intl.dart';
 
 class CommunityAdminScreen extends StatefulWidget {
@@ -20,46 +23,27 @@ class CommunityAdminScreen extends StatefulWidget {
 
 class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   
   // Estadísticas de la comunidad
   int _totalMembers = 0;
   int _totalTasks = 0;
   int _completedTasks = 0;
-  int _activeTasks = 0;
   int _messagesCount = 0;
   
   // Listas de datos
-  List<Map<String, dynamic>> _members = [];
+  final List<Map<String, dynamic>> _members = [];
   List<Map<String, dynamic>> _recentTasks = [];
   List<Map<String, dynamic>> _tasksByStatus = [];
+  final List<Map<String, dynamic>> _memberStats = [];
   
   bool _isLoading = true;
-  bool _isOwner = false;
 
   @override
   void initState() {
     super.initState();
-    _checkOwnership();
     _loadCommunityData();
   }
 
-  Future<void> _checkOwnership() async {
-    try {
-      final communityDoc = await _firestore
-          .collection('communities')
-          .doc(widget.communityId)
-          .get();
-      
-      if (communityDoc.exists) {
-        final data = communityDoc.data()!;
-        final ownerId = data['ownerId'] as String?;
-        _isOwner = ownerId == _auth.currentUser?.uid;
-      }
-    } catch (e) {
-      print('Error checking ownership: $e');
-    }
-  }
 
   Future<void> _loadCommunityData() async {
     setState(() {
@@ -74,6 +58,9 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
         _loadRecentTasks(),
         _loadMessagesCount(),
       ]);
+      
+      // Load member productivity stats after members are loaded
+      await _loadMemberProductivityStats();
     } catch (e) {
       print('Error loading community data: $e');
     } finally {
@@ -110,7 +97,6 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
       
       _totalTasks = tasksSnapshot.docs.length;
       _completedTasks = 0;
-      _activeTasks = 0;
       
       Map<String, int> statusCount = {};
       
@@ -122,8 +108,6 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
         
         if (status == 'done' || status == 'completed') {
           _completedTasks++;
-        } else {
-          _activeTasks++;
         }
       }
       
@@ -190,12 +174,20 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
               role = 'owner';
             }
             
+            // Get user photo URL
+            String? photoURL;
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              photoURL = userData['photoURL'];
+            }
+            
             _members.add({
               'id': memberId,
               'name': userName,
               'email': userEmail,
               'role': role,
               'joinedAt': joinedAt,
+              'photoURL': photoURL,
             });
           } catch (e) {
             print('Error loading member $memberId: $e');
@@ -262,6 +254,78 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
     }
   }
 
+  Future<void> _loadMemberProductivityStats() async {
+    try {
+      _memberStats.clear();
+      
+      for (var member in _members) {
+        final memberId = member['id'] as String;
+        
+        // Get all tasks assigned to this member
+        final tasksSnapshot = await _firestore
+            .collection('communities')
+            .doc(widget.communityId)
+            .collection('tasks')
+            .where('assignedTo', arrayContains: memberId)
+            .get();
+        
+        int totalTasks = tasksSnapshot.docs.length;
+        int completedTasks = 0;
+        int inProgressTasks = 0;
+        int overdueTasks = 0;
+        DateTime now = DateTime.now();
+        
+        for (var taskDoc in tasksSnapshot.docs) {
+          final taskData = taskDoc.data();
+          final status = taskData['status'] ?? 'toDo';
+          final dueDate = (taskData['dueDate'] as Timestamp?)?.toDate();
+          
+          switch (status) {
+            case 'done':
+              completedTasks++;
+              break;
+            case 'doing':
+              inProgressTasks++;
+              break;
+          }
+          
+          // Check if overdue
+          if (dueDate != null && dueDate.isBefore(now) && status != 'done') {
+            overdueTasks++;
+          }
+        }
+        
+        double completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+        
+        _memberStats.add({
+          'memberId': memberId,
+          'name': member['name'],
+          'email': member['email'],
+          'role': member['role'],
+          'photoURL': member['photoURL'],
+          'totalTasks': totalTasks,
+          'completedTasks': completedTasks,
+          'inProgressTasks': inProgressTasks,
+          'overdueTasks': overdueTasks,
+          'completionRate': completionRate,
+        });
+      }
+      
+      // Sort by completion rate and total tasks
+      _memberStats.sort((a, b) {
+        // First by completion rate (descending)
+        final rateComparison = (b['completionRate'] as double).compareTo(a['completionRate'] as double);
+        if (rateComparison != 0) return rateComparison;
+        
+        // Then by total tasks (descending)
+        return (b['totalTasks'] as int).compareTo(a['totalTasks'] as int);
+      });
+      
+    } catch (e) {
+      print('Error loading member productivity stats: $e');
+    }
+  }
+
   String _formatDate(DateTime? date) {
     if (date == null) return 'Fecha desconocida';
     return DateFormat('dd/MM/yyyy HH:mm').format(date);
@@ -309,129 +373,87 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
     }
   }
 
-  String _getRoleDisplayName(String role) {
-    switch (role.toLowerCase()) {
-      case 'owner':
-        return 'Propietario';
-      case 'admin':
-        return 'Administrador';
-      case 'member':
-        return 'Miembro';
-      default:
-        return role;
-    }
-  }
-
-  Color _getRoleColor(String role) {
-    switch (role.toLowerCase()) {
-      case 'owner':
-        return Colors.purple;
-      case 'admin':
-        return Colors.blue;
-      case 'member':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
 
   Widget _buildStatCard({
     required String title,
     required String value,
     required IconData icon,
     required Color color,
-    String? subtitle,
     double? percentage,
   }) {
     final theme = Theme.of(context);
     
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.shadow.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
+      width: 160,
+      height: 230,
+      margin: const EdgeInsets.all(8),
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              // Icon con fondo circular
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 100,
+                height: 100,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
                   icon,
                   color: color,
-                  size: 24,
+                  size: 52,
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontFamily: fontFamilyPrimary,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      value,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontFamily: fontFamilyPrimary,
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                  ],
+              
+              // Value - siempre en el mismo lugar
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: fontFamilyPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              
+              // Title - siempre 2 líneas reservadas
+              SizedBox(
+                height: 32,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: fontFamilyPrimary,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              
+              // Progress area - siempre reservado (transparente si no hay progreso)
+              SizedBox(
+                height: 8,
+                child: percentage != null
+                    ? LinearProgressIndicator(
+                        value: percentage / 100,
+                        backgroundColor: color.withOpacity(0.2),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                        minHeight: 4,
+                      )
+                    : Container(), // Espacio transparente reservado
               ),
             ],
           ),
-          if (percentage != null) ...[
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: percentage / 100,
-              backgroundColor: color.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${percentage.toStringAsFixed(1)}%',
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: fontFamilyPrimary,
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (subtitle != null && percentage == null) ...[
-            const SizedBox(height: 12),
-            Text(
-              subtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontFamily: fontFamilyPrimary,
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -439,98 +461,234 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
   Widget _buildMemberCard(Map<String, dynamic> member) {
     final theme = Theme.of(context);
     final role = member['role'] as String;
-    final roleColor = _getRoleColor(role);
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outline.withOpacity(0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: roleColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Icon(
-              role == 'owner' 
-                  ? Icons.admin_panel_settings 
-                  : role == 'admin' 
-                      ? Icons.admin_panel_settings 
-                      : Icons.person,
-              color: roleColor,
-              size: 24,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MemberDetailScreen(
+              communityId: widget.communityId,
+              memberId: member['id'],
+              memberName: member['name'] ?? 'Usuario',
+              memberEmail: member['email'],
+              memberImageUrl: member['photoURL'],
+              memberRole: role,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  member['name'] ?? 'Usuario desconocido',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontFamily: fontFamilyPrimary,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (member['email']?.isNotEmpty == true) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    member['email'],
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontFamily: fontFamilyPrimary,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-                const SizedBox(height: 4),
-                Row(
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              UserAvatarWidget(
+                imageUrl: member['photoURL'],
+                radius: 24,
+                userRole: role,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: roleColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                    Text(
+                      member['name'] ?? 'Usuario desconocido',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontFamily: fontFamilyPrimary,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      child: Text(
-                        _getRoleDisplayName(role),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontFamily: fontFamilyPrimary,
-                          color: roleColor,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    if (member['joinedAt'] != null) ...[
-                      const SizedBox(width: 8),
+                    if (member['email']?.isNotEmpty == true) ...[
+                      const SizedBox(height: 2),
                       Text(
-                        _formatDate(member['joinedAt']),
+                        member['email'],
                         style: theme.textTheme.bodySmall?.copyWith(
                           fontFamily: fontFamilyPrimary,
-                          color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    const SizedBox(height: 4),
+                    RoleBadgeWidget(role: role),
                   ],
                 ),
-              ],
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMemberStatsCard(Map<String, dynamic> memberStats, int rank) {
+    final theme = Theme.of(context);
+    final completionRate = memberStats['completionRate'] as double;
+    final totalTasks = memberStats['totalTasks'] as int;
+    final completedTasks = memberStats['completedTasks'] as int;
+    final role = memberStats['role'] as String;
+    
+    Color rankColor = Colors.grey;
+    IconData? rankIcon;
+    
+    switch (rank) {
+      case 1:
+        rankColor = Colors.amber;
+        rankIcon = Icons.emoji_events;
+        break;
+      case 2:
+        rankColor = Colors.grey.shade400;
+        rankIcon = Icons.workspace_premium;
+        break;
+      case 3:
+        rankColor = Colors.orange.shade700;
+        rankIcon = Icons.military_tech;
+        break;
+    }
+    
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MemberDetailScreen(
+              communityId: widget.communityId,
+              memberId: memberStats['memberId'],
+              memberName: memberStats['name'] ?? 'Usuario',
+              memberEmail: memberStats['email'],
+              memberImageUrl: memberStats['photoURL'],
+              memberRole: role,
             ),
           ),
-        ],
+        );
+      },
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        elevation: rank <= 3 ? 3 : 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: rank <= 3 
+              ? BorderSide(color: rankColor.withOpacity(0.3), width: 2)
+              : BorderSide.none,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Rank indicator
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: rank <= 3 ? rankColor.withOpacity(0.2) : theme.colorScheme.surfaceVariant,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(
+                  child: rank <= 3 && rankIcon != null
+                      ? Icon(rankIcon, color: rankColor, size: 16)
+                      : Text(
+                          '#$rank',
+                          style: TextStyle(
+                            fontFamily: fontFamilyPrimary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Avatar
+              UserAvatarWidget(
+                imageUrl: memberStats['photoURL'],
+                radius: 20,
+                userRole: role,
+              ),
+              const SizedBox(width: 12),
+              // Member info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            memberStats['name'] ?? 'Usuario',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontFamily: fontFamilyPrimary,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        RoleBadgeWidget(role: role),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$completedTasks/$totalTasks tareas',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontFamily: fontFamilyPrimary,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          '${completionRate.toStringAsFixed(1)}%',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: fontFamilyPrimary,
+                            fontWeight: FontWeight.bold,
+                            color: completionRate >= 80 
+                                ? Colors.green 
+                                : completionRate >= 60 
+                                    ? Colors.orange 
+                                    : Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: totalTasks > 0 ? completedTasks / totalTasks : 0,
+                      backgroundColor: theme.colorScheme.surfaceVariant,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        completionRate >= 80 
+                            ? Colors.green 
+                            : completionRate >= 60 
+                                ? Colors.orange 
+                                : Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -700,14 +858,11 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Grid de estadísticas
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.3,
+                  // Cards de estadísticas principales
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
                       _buildStatCard(
                         title: 'Total Miembros',
@@ -722,7 +877,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
                         color: Colors.blue,
                       ),
                       _buildStatCard(
-                        title: 'Tareas Completadas',
+                        title: 'Completadas',
                         value: _completedTasks.toString(),
                         icon: Icons.check_circle,
                         color: Colors.green,
@@ -739,28 +894,66 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
                   
                   // Distribución de tareas por estado
                   if (_tasksByStatus.isNotEmpty) ...[
+                    const SizedBox(height: 32),
                     _buildSectionHeader('Distribución de Tareas', Icons.pie_chart),
+                    const SizedBox(height: 16),
                     
-                    ..._tasksByStatus.map((statusData) {
-                      final status = statusData['status'] as String;
-                      final count = statusData['count'] as int;
-                      final percentage = statusData['percentage'] as double;
-                      
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: _buildStatCard(
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _tasksByStatus.map((statusData) {
+                        final status = statusData['status'] as String;
+                        final count = statusData['count'] as int;
+                        final percentage = statusData['percentage'] as double;
+                        
+                        return _buildStatCard(
                           title: _getStatusDisplayName(status),
                           value: count.toString(),
                           icon: Icons.assignment,
                           color: _getStatusColor(status),
                           percentage: percentage,
-                        ),
-                      );
-                    }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 32),
                   ],
                   
+                  // Ranking de Productividad
+                  const SizedBox(height: 16),
+                  _buildSectionHeader('Ranking de Productividad', Icons.leaderboard),
+                  
+                  if (_memberStats.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.analytics_outlined,
+                            size: 48,
+                            color: theme.colorScheme.onSurface.withOpacity(0.3),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No hay datos de productividad disponibles',
+                            style: TextStyle(
+                              fontFamily: fontFamilyPrimary,
+                              color: theme.colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ...(_memberStats.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final memberStats = entry.value;
+                      return _buildMemberStatsCard(memberStats, index + 1);
+                    })),
+                  
                   // Miembros
-                  _buildSectionHeader('Miembros ($_totalMembers)', Icons.group),
+                  const SizedBox(height: 32),
+                  _buildSectionHeader('Todos los Miembros ($_totalMembers)', Icons.group),
                   
                   if (_members.isEmpty)
                     Container(
@@ -784,23 +977,10 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
                       ),
                     )
                   else
-                    ...(_members.take(10).map((member) => _buildMemberCard(member))),
-                  
-                  if (_members.length > 10)
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(
-                        'Y ${_members.length - 10} miembros más...',
-                        style: TextStyle(
-                          fontFamily: fontFamilyPrimary,
-                          color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                    ...(_members.map((member) => _buildMemberCard(member))),
                   
                   // Tareas recientes
+                  const SizedBox(height: 32),
                   _buildSectionHeader('Tareas Recientes', Icons.schedule),
                   
                   if (_recentTasks.isEmpty)

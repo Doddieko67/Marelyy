@@ -14,8 +14,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/core/services/file_upload_service.dart'; // IMPORTA TU NUEVO SERVICIO
+import 'package:classroom_mejorado/core/services/message_service.dart';
+import 'package:classroom_mejorado/core/utils/permission_checker.dart';
 import 'package:classroom_mejorado/features/admin/screens/admin_management_screen.dart';
 import 'package:classroom_mejorado/features/communities/models/community_model.dart';
+import 'package:classroom_mejorado/features/communities/widgets/member_list_card.dart';
 
 class CommunitySettingsScreen extends StatefulWidget {
   final String communityId;
@@ -96,67 +99,11 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
   }
 
   Future<void> _showSuccessMessage(String message) async {
-    // ... (sin cambios)
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.check_circle,
-                color: Theme.of(context).colorScheme.onError,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                message,
-                style: TextStyle(color: Theme.of(context).colorScheme.onError),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.green.shade600,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
+    MessageService.showSuccess(context, message);
   }
 
   Future<void> _showErrorMessage(String message) async {
-    // ... (sin cambios)
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.error,
-                color: Theme.of(context).colorScheme.onError,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  message,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onError,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
+    MessageService.showError(context, message);
   }
 
   // MODIFICADO: Usar el servicio para seleccionar y subir
@@ -1579,12 +1526,10 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                   );
                   final currentUser = FirebaseAuth.instance.currentUser;
                   
-                  // Verificar si el usuario actual es administrador o propietario
-                  final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
-                  final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [currentOwnerId]);
-                  final bool isCurrentUserOwner = currentUser != null && ownerIds.contains(currentUser.uid);
-                  final bool isCurrentUserAdmin = currentUser != null && 
-                      (isCurrentUserOwner || adminIds.contains(currentUser.uid));
+                  // Verificar permisos usando PermissionChecker
+                  final bool isCurrentUserOwner = PermissionChecker.isCurrentUserOwner(communityData);
+                  final bool isCurrentUserAdmin = PermissionChecker.isCurrentUserAdmin(communityData);
+                  final roleLists = PermissionChecker.getRoleLists(communityData);
 
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (mounted) {
@@ -1976,14 +1921,14 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                 );
                                 sortedMemberIds.sort((a, b) {
                                   // Propietarios primero
-                                  final aIsOwner = ownerIds.contains(a);
-                                  final bIsOwner = ownerIds.contains(b);
+                                  final aIsOwner = roleLists['owners']!.contains(a);
+                                  final bIsOwner = roleLists['owners']!.contains(b);
                                   if (aIsOwner && !bIsOwner) return -1;
                                   if (!aIsOwner && bIsOwner) return 1;
                                   
                                   // Luego administradores
-                                  final aIsAdmin = adminIds.contains(a);
-                                  final bIsAdmin = adminIds.contains(b);
+                                  final aIsAdmin = roleLists['admins']!.contains(a);
+                                  final bIsAdmin = roleLists['admins']!.contains(b);
                                   if (aIsAdmin && !bIsAdmin) return -1;
                                   if (!aIsAdmin && bIsAdmin) return 1;
                                   
@@ -2053,144 +1998,22 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                                   .withOpacity(0.2),
                                             ),
                                         itemBuilder: (context, index) {
-                                          final memberId =
-                                              sortedMemberIds[index];
-                                          final userData =
-                                              userDataMap[memberId];
-                                          final String userName =
-                                              userData?['name'] ??
+                                          final memberId = sortedMemberIds[index];
+                                          final userData = userDataMap[memberId];
+                                          final String userName = userData?['name'] ??
                                               userData?['displayName'] ??
                                               'Usuario';
-                                          final String? userPhotoUrl =
-                                              userData?['photoURL'];
-                                          final bool isOwner = ownerIds.contains(memberId);
-                                          final bool isAdmin = adminIds.contains(memberId);
-                                          final bool isSelf =
-                                              memberId == currentUser?.uid;
+                                          final String? userPhotoUrl = userData?['photoURL'];
+                                          final String role = PermissionChecker.getUserRole(memberId, communityData);
+                                          final bool isSelf = memberId == currentUser?.uid;
                                           
-                                          return Container(
-                                            margin: const EdgeInsets.only(
-                                              left: 16,
-                                              right: 16,
-                                              bottom: 8,
-                                            ),
-                                            child: Card(
-                                              elevation: 1,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: ListTile(
-                                                contentPadding: const EdgeInsets.symmetric(
-                                                  horizontal: 16,
-                                                  vertical: 8,
-                                                ),
-                                                leading: CircleAvatar(
-                                                  radius: 24,
-                                                  backgroundColor: isOwner
-                                                      ? theme.colorScheme.primary.withOpacity(0.2)
-                                                      : isAdmin
-                                                          ? Colors.orange.withOpacity(0.2)
-                                                          : theme.colorScheme.surfaceVariant,
-                                                  child: userPhotoUrl != null && userPhotoUrl.isNotEmpty
-                                                      ? ClipOval(
-                                                          child: CachedNetworkImage(
-                                                            imageUrl: userPhotoUrl,
-                                                            width: 48,
-                                                            height: 48,
-                                                            fit: BoxFit.cover,
-                                                            placeholder: (context, url) => Icon(
-                                                              Icons.person_outline,
-                                                              color: theme.colorScheme.onSurfaceVariant,
-                                                              size: 24,
-                                                            ),
-                                                            errorWidget: (context, url, error) => Icon(
-                                                              Icons.person_outline,
-                                                              color: theme.colorScheme.onSurfaceVariant,
-                                                              size: 24,
-                                                            ),
-                                                          ),
-                                                        )
-                                                      : Icon(
-                                                          Icons.person_outline,
-                                                          color: isOwner
-                                                              ? theme.colorScheme.primary
-                                                              : isAdmin
-                                                                  ? Colors.orange.shade700
-                                                                  : theme.colorScheme.onSurfaceVariant,
-                                                          size: 24,
-                                                        ),
-                                                ),
-                                                title: Text(
-                                                  '$userName${isSelf ? " (Tú)" : ""}',
-                                                  style: TextStyle(
-                                                    fontFamily: fontFamilyPrimary,
-                                                    fontWeight: isOwner
-                                                        ? FontWeight.bold
-                                                        : FontWeight.w600,
-                                                    color: theme.colorScheme.onSurface,
-                                                  ),
-                                                ),
-                                                subtitle: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    if (userData?['email'] != null)
-                                                      Text(
-                                                        userData!['email'],
-                                                        style: TextStyle(
-                                                          fontFamily: fontFamilyPrimary,
-                                                          fontSize: 12,
-                                                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
-                                                        ),
-                                                      ),
-                                                    const SizedBox(height: 4),
-                                                    Container(
-                                                      padding: const EdgeInsets.symmetric(
-                                                        horizontal: 8,
-                                                        vertical: 2,
-                                                      ),
-                                                      decoration: BoxDecoration(
-                                                        color: isOwner
-                                                            ? theme.colorScheme.primary.withOpacity(0.15)
-                                                            : isAdmin
-                                                                ? Colors.orange.withOpacity(0.2)
-                                                                : theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                                                        borderRadius: BorderRadius.circular(12),
-                                                      ),
-                                                      child: Text(
-                                                        isOwner
-                                                            ? 'Propietario'
-                                                            : isAdmin
-                                                                ? 'Administrador'
-                                                                : 'Miembro',
-                                                        style: TextStyle(
-                                                          fontFamily: fontFamilyPrimary,
-                                                          fontSize: 11,
-                                                          fontWeight: FontWeight.w600,
-                                                          color: isOwner
-                                                              ? theme.colorScheme.primary
-                                                              : isAdmin
-                                                                  ? Colors.orange.shade700
-                                                                  : theme.colorScheme.onSurfaceVariant,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                                trailing: isOwner
-                                                    ? Icon(
-                                                        Icons.star_rounded,
-                                                        color: Colors.amber.shade600,
-                                                        size: 22,
-                                                      )
-                                                    : isAdmin
-                                                        ? Icon(
-                                                            Icons.admin_panel_settings_rounded,
-                                                            color: Colors.orange.shade700,
-                                                            size: 20,
-                                                          )
-                                                        : null,
-                                              ),
-                                            ),
+                                          return MemberListCard(
+                                            userId: memberId,
+                                            name: userName,
+                                            email: userData?['email'],
+                                            imageUrl: userPhotoUrl,
+                                            role: role,
+                                            isSelf: isSelf,
                                           );
                                         },
                                       ),

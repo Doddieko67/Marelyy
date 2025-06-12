@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:classroom_mejorado/features/communities/models/community_model.dart';
 import 'package:classroom_mejorado/features/communities/services/community_service.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
+import 'package:classroom_mejorado/core/services/message_service.dart';
+import 'package:classroom_mejorado/core/utils/permission_checker.dart';
+import 'package:classroom_mejorado/features/communities/widgets/member_list_card.dart';
 
 class AdminManagementScreen extends StatefulWidget {
   final String communityId;
@@ -262,80 +265,21 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
   }
 
   Widget _buildAdminCard(CommunityMember admin, ThemeData theme) {
-    return Card(
-      margin: EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.secondary,
-          child: admin.profileImageUrl != null && admin.profileImageUrl!.isNotEmpty
-              ? ClipOval(
-                  child: Image.network(
-                    admin.profileImageUrl!,
-                    width: 40,
-                    height: 40,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Icon(
-                      Icons.person,
-                      color: theme.colorScheme.onSecondary,
-                    ),
-                  ),
-                )
-              : Icon(
-                  Icons.person,
-                  color: theme.colorScheme.onSecondary,
-                ),
-        ),
-        title: Text(
-          admin.name,
-          style: TextStyle(
-            fontFamily: fontFamilyPrimary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(admin.email),
-            SizedBox(height: 4),
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.secondary.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                'Administrador',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: theme.colorScheme.secondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-        trailing: isOwner
-            ? PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'demote') {
-                    _showDemoteDialog(admin);
-                  }
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'demote',
-                    child: Row(
-                      children: [
-                        Icon(Icons.remove_moderator, size: 20, color: Colors.orange),
-                        SizedBox(width: 8),
-                        Text('Quitar admin'),
-                      ],
-                    ),
-                  ),
-                ],
-              )
-            : Icon(Icons.admin_panel_settings, color: theme.colorScheme.secondary),
-      ),
+    return MemberListCard(
+      userId: admin.userId,
+      name: admin.name,
+      email: admin.email,
+      imageUrl: admin.profileImageUrl,
+      role: 'admin',
+      isSelf: admin.userId == FirebaseAuth.instance.currentUser?.uid,
+      margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+      trailing: isOwner
+          ? IconButton(
+              icon: Icon(Icons.remove_circle_outline, color: theme.colorScheme.error),
+              onPressed: () => _showDemoteDialog(admin),
+              tooltip: 'Quitar administrador',
+            )
+          : Icon(Icons.admin_panel_settings_rounded, color: Colors.orange.shade700),
     );
   }
 
@@ -375,12 +319,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         communityId: widget.communityId,
         community: widget.community,
         onPromoted: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Miembro promovido a administrador'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          MessageService.showSuccess(context, 'Miembro promovido a administrador');
         },
       ),
     );
@@ -492,12 +431,7 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al cargar miembros: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      MessageService.showError(context, 'Error al cargar miembros: $e');
     }
   }
 
@@ -523,19 +457,9 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
               );
               
               if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('${admin.name} ya no es administrador'),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
+                MessageService.showInfo(context, '${admin.name} ya no es administrador');
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al quitar administrador'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+                MessageService.showError(context, 'Error al quitar administrador');
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
@@ -747,12 +671,7 @@ class _PromoteMemberDialogState extends State<_PromoteMemberDialog> {
     if (success) {
       widget.onPromoted();
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al promover a administrador'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      MessageService.showError(context, 'Error al promover a administrador');
     }
   }
 }
