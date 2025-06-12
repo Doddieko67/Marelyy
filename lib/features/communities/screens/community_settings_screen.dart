@@ -2067,78 +2067,130 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                           final bool isAdmin = adminIds.contains(memberId);
                                           final bool isSelf =
                                               memberId == currentUser?.uid;
-                                          return ListTile(
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
+                                          
+                                          return Container(
+                                            margin: const EdgeInsets.only(
+                                              left: 16,
+                                              right: 16,
+                                              bottom: 8,
+                                            ),
+                                            child: Card(
+                                              elevation: 1,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(12),
+                                              ),
+                                              child: ListTile(
+                                                contentPadding: const EdgeInsets.symmetric(
                                                   horizontal: 16,
                                                   vertical: 8,
                                                 ),
-                                            leading: CircleAvatar(
-                                              radius: 22,
-                                              backgroundImage:
-                                                  userPhotoUrl != null &&
-                                                      userPhotoUrl.isNotEmpty
-                                                  ? CachedNetworkImageProvider(
-                                                      userPhotoUrl,
-                                                    )
-                                                  : null,
-                                              backgroundColor: theme
-                                                  .colorScheme
-                                                  .surfaceVariant,
-                                              child:
-                                                  (userPhotoUrl == null ||
-                                                      userPhotoUrl.isEmpty)
-                                                  ? Icon(
-                                                      Icons.person_outline,
-                                                      color: theme
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
-                                                    )
-                                                  : null,
-                                            ),
-                                            title: Text(
-                                              '$userName ${isSelf ? "(Tú)" : ""}',
-                                              style: TextStyle(
-                                                fontFamily: fontFamilyPrimary,
-                                                fontWeight: isOwner
-                                                    ? FontWeight.bold
-                                                    : FontWeight.w500,
-                                                color:
-                                                    theme.colorScheme.onSurface,
-                                              ),
-                                            ),
-                                            subtitle: Text(
-                                              isOwner
-                                                  ? 'Propietario'
-                                                  : isAdmin
-                                                      ? 'Administrador'
-                                                      : 'Miembro',
-                                              style: TextStyle(
-                                                fontFamily: fontFamilyPrimary,
-                                                fontSize: 12,
-                                                color: isOwner
-                                                    ? theme.colorScheme.primary
-                                                    : isAdmin
-                                                        ? theme.colorScheme.secondary
-                                                        : theme
-                                                              .colorScheme
-                                                              .onSurfaceVariant,
-                                              ),
-                                            ),
-                                            trailing: isOwner
-                                                ? Icon(
-                                                    Icons.star_rounded,
-                                                    color:
-                                                        Colors.amber.shade600,
-                                                    size: 20,
-                                                  )
-                                                : isAdmin
+                                                leading: CircleAvatar(
+                                                  radius: 24,
+                                                  backgroundColor: isOwner
+                                                      ? theme.colorScheme.primary.withOpacity(0.2)
+                                                      : isAdmin
+                                                          ? Colors.orange.withOpacity(0.2)
+                                                          : theme.colorScheme.surfaceVariant,
+                                                  child: userPhotoUrl != null && userPhotoUrl.isNotEmpty
+                                                      ? ClipOval(
+                                                          child: CachedNetworkImage(
+                                                            imageUrl: userPhotoUrl,
+                                                            width: 48,
+                                                            height: 48,
+                                                            fit: BoxFit.cover,
+                                                            placeholder: (context, url) => Icon(
+                                                              Icons.person_outline,
+                                                              color: theme.colorScheme.onSurfaceVariant,
+                                                              size: 24,
+                                                            ),
+                                                            errorWidget: (context, url, error) => Icon(
+                                                              Icons.person_outline,
+                                                              color: theme.colorScheme.onSurfaceVariant,
+                                                              size: 24,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : Icon(
+                                                          Icons.person_outline,
+                                                          color: isOwner
+                                                              ? theme.colorScheme.primary
+                                                              : isAdmin
+                                                                  ? Colors.orange.shade700
+                                                                  : theme.colorScheme.onSurfaceVariant,
+                                                          size: 24,
+                                                        ),
+                                                ),
+                                                title: Text(
+                                                  '$userName${isSelf ? " (Tú)" : ""}',
+                                                  style: TextStyle(
+                                                    fontFamily: fontFamilyPrimary,
+                                                    fontWeight: isOwner
+                                                        ? FontWeight.bold
+                                                        : FontWeight.w600,
+                                                    color: theme.colorScheme.onSurface,
+                                                  ),
+                                                ),
+                                                subtitle: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    if (userData?['email'] != null)
+                                                      Text(
+                                                        userData!['email'],
+                                                        style: TextStyle(
+                                                          fontFamily: fontFamilyPrimary,
+                                                          fontSize: 12,
+                                                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
+                                                        ),
+                                                      ),
+                                                    const SizedBox(height: 4),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 2,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: isOwner
+                                                            ? theme.colorScheme.primary.withOpacity(0.15)
+                                                            : isAdmin
+                                                                ? Colors.orange.withOpacity(0.2)
+                                                                : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                                                        borderRadius: BorderRadius.circular(12),
+                                                      ),
+                                                      child: Text(
+                                                        isOwner
+                                                            ? 'Propietario'
+                                                            : isAdmin
+                                                                ? 'Administrador'
+                                                                : 'Miembro',
+                                                        style: TextStyle(
+                                                          fontFamily: fontFamilyPrimary,
+                                                          fontSize: 11,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: isOwner
+                                                              ? theme.colorScheme.primary
+                                                              : isAdmin
+                                                                  ? Colors.orange.shade700
+                                                                  : theme.colorScheme.onSurfaceVariant,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                trailing: isOwner
                                                     ? Icon(
-                                                        Icons.admin_panel_settings,
-                                                        color: theme.colorScheme.secondary,
-                                                        size: 18,
+                                                        Icons.star_rounded,
+                                                        color: Colors.amber.shade600,
+                                                        size: 22,
                                                       )
-                                                    : null,
+                                                    : isAdmin
+                                                        ? Icon(
+                                                            Icons.admin_panel_settings_rounded,
+                                                            color: Colors.orange.shade700,
+                                                            size: 20,
+                                                          )
+                                                        : null,
+                                              ),
+                                            ),
                                           );
                                         },
                                       ),

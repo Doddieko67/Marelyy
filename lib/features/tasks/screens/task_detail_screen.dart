@@ -192,7 +192,14 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
 
       if (!communityDoc.exists) return false;
 
-      final ownerId = communityDoc.get('ownerId') as String?;
+      final data = communityDoc.data() as Map<String, dynamic>;
+      
+      // Verificar nueva lista de propietarios
+      final owners = List<String>.from(data['owners'] ?? []);
+      if (owners.contains(currentUser.uid)) return true;
+      
+      // Verificar propietario único (compatibilidad)
+      final ownerId = data['ownerId'] as String?;
       return ownerId == currentUser.uid;
     } catch (e) {
       print('Error checking community owner: $e');
@@ -223,13 +230,49 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     }
   }
 
-  // ✅ FUNCIÓN HÍBRIDA: Verificar si puede completar tareas (admin O propietario)
-  Future<bool> _canCompleteTask() async {
-    // Verificar si es admin global O propietario de la comunidad
-    final isAdmin = await _isUserAdmin();
-    final isOwner = await _isUserCommunityOwner();
+  // ✅ FUNCIÓN PARA VERIFICAR SI ES ADMIN DE LA COMUNIDAD
+  Future<bool> _isUserCommunityAdmin() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) return false;
 
-    return isAdmin || isOwner;
+      final communityDoc = await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(widget.communityId)
+          .get();
+
+      if (!communityDoc.exists) return false;
+
+      final data = communityDoc.data() as Map<String, dynamic>;
+      
+      // Verificar lista de administradores
+      final admins = List<String>.from(data['admins'] ?? []);
+      return admins.contains(currentUser.uid);
+    } catch (e) {
+      print('Error checking community admin: $e');
+      return false;
+    }
+  }
+
+  // ✅ FUNCIÓN HÍBRIDA: Verificar si puede completar tareas (admin global O propietario O admin de comunidad)
+  Future<bool> _canCompleteTask() async {
+    // Verificar si es admin global O propietario O admin de la comunidad
+    final isGlobalAdmin = await _isUserAdmin();
+    final isOwner = await _isUserCommunityOwner();
+    final isCommunityAdmin = await _isUserCommunityAdmin();
+
+    return isGlobalAdmin || isOwner || isCommunityAdmin;
+  }
+
+  // Helper para mostrar el rol del usuario
+  String _getUserRoleText(bool isGlobalAdmin, bool isOwner, bool isCommunityAdmin) {
+    List<String> roles = [];
+    if (isGlobalAdmin) roles.add('Admin Global');
+    if (isOwner) roles.add('Propietario');
+    if (isCommunityAdmin) roles.add('Admin Comunidad');
+    
+    if (roles.isEmpty) return 'Usuario Regular';
+    return roles.join(' y ');
   }
 
   // ✅ NUEVAS FUNCIONES PARA MANEJO DE ARCHIVOS (SIN PREGUNTAR TIPO)
@@ -942,8 +985,9 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
     // Verificar si hay archivos subidos y si puede completar tareas
     final hasFiles = await _hasUploadedFiles();
     final canComplete = await _canCompleteTask();
-    final isAdmin = await _isUserAdmin();
+    final isGlobalAdmin = await _isUserAdmin();
     final isOwner = await _isUserCommunityOwner();
+    final isCommunityAdmin = await _isUserCommunityAdmin();
 
     showDialog(
       context: context,
@@ -970,7 +1014,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
               } else if (!canComplete) {
                 canApplyState = false;
                 validationMessage =
-                    'Solo administradores o propietarios de la comunidad pueden marcar tareas como completadas';
+                    'Solo administradores o propietarios pueden marcar tareas como completadas';
               }
             } else {
               // Validar otras transiciones
@@ -1040,13 +1084,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                           children: [
                             Icon(
                               canComplete
-                                  ? (isAdmin
+                                  ? (isGlobalAdmin
                                         ? Icons.admin_panel_settings
-                                        : Icons.star)
+                                        : isOwner
+                                        ? Icons.star
+                                        : Icons.shield)
                                   : Icons.person,
                               color: canComplete
-                                  ? (isAdmin
+                                  ? (isGlobalAdmin
                                         ? Colors.green.shade700
+                                        : isOwner
+                                        ? Colors.amber.shade700
                                         : Colors.blue.shade700)
                                   : Colors.orange.shade700,
                               size: 16,
@@ -1054,17 +1102,15 @@ class _TaskDetailScreenState extends State<TaskDetailScreen>
                             const SizedBox(width: 8),
                             Text(
                               canComplete
-                                  ? (isAdmin && isOwner
-                                        ? 'Admin y Propietario'
-                                        : isAdmin
-                                        ? 'Administrador'
-                                        : 'Propietario de Comunidad')
+                                  ? _getUserRoleText(isGlobalAdmin, isOwner, isCommunityAdmin)
                                   : 'Usuario Regular',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 fontFamily: fontFamilyPrimary,
                                 color: canComplete
-                                    ? (isAdmin
+                                    ? (isGlobalAdmin
                                           ? Colors.green.shade700
+                                          : isOwner
+                                          ? Colors.amber.shade700
                                           : Colors.blue.shade700)
                                     : Colors.orange.shade700,
                                 fontWeight: FontWeight.w600,

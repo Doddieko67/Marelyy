@@ -3,6 +3,7 @@ import 'package:classroom_mejorado/features/profile/screens/ai_assistant_screen.
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // Importa para interactuar con Firestore
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/features/communities/screens/community_chat_tab_content.dart';
 import 'package:classroom_mejorado/features/communities/screens/community_tasks_tab_content.dart';
@@ -23,6 +24,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   late Stream<DocumentSnapshot> _communityDetailsStream;
+  StreamSubscription<DocumentSnapshot>? _permissionsListener;
   bool _isAdmin = false;
   bool _isLoadingPermissions = true;
 
@@ -37,8 +39,9 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
     
     // Add listener to prevent navigation to admin tab for non-admin users
     _tabController.addListener(_onTabChanged);
-    
+
     _checkUserPermissions();
+    _setupPermissionsListener();
 
     _communityDetailsStream = FirebaseFirestore.instance
         .collection('communities')
@@ -57,38 +60,72 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
     }
   }
 
+  void _setupPermissionsListener() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    // Listener silencioso que solo escucha cambios en permisos
+    _permissionsListener = FirebaseFirestore.instance
+        .collection('communities')
+        .doc(widget.communityId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists || !mounted) return;
+
+      final communityData = snapshot.data() as Map<String, dynamic>;
+      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
+      
+      final newIsAdmin = ownerIds.contains(user.uid) || adminIds.contains(user.uid);
+      
+      // Solo actualizar si realmente cambió
+      if (_isAdmin != newIsAdmin) {
+        setState(() {
+          _isAdmin = newIsAdmin;
+        });
+      }
+    });
+  }
+
   Future<void> _checkUserPermissions() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         setState(() {
+          _isAdmin = false;
           _isLoadingPermissions = false;
         });
         return;
       }
 
-      final memberDoc = await FirebaseFirestore.instance
+      // Usar el mismo método que AdminManagement: leer del documento principal
+      final communityDoc = await FirebaseFirestore.instance
           .collection('communities')
           .doc(widget.communityId)
-          .collection('members')
-          .doc(user.uid)
           .get();
 
-      if (memberDoc.exists) {
-        final role = memberDoc.data()?['role'] ?? 'member';
-        final newIsAdmin = role == 'owner' || role == 'admin';
-        
+      if (!communityDoc.exists) {
         setState(() {
-          _isAdmin = newIsAdmin;
+          _isAdmin = false;
           _isLoadingPermissions = false;
         });
-      } else {
-        setState(() {
-          _isLoadingPermissions = false;
-        });
+        return;
       }
+
+      final communityData = communityDoc.data() as Map<String, dynamic>;
+      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
+      
+      // El usuario es admin si está en la lista de owners O en la lista de admins
+      final newIsAdmin = ownerIds.contains(user.uid) || adminIds.contains(user.uid);
+      
+      setState(() {
+        _isAdmin = newIsAdmin;
+        _isLoadingPermissions = false;
+      });
     } catch (e) {
       setState(() {
+        _isAdmin = false;
         _isLoadingPermissions = false;
       });
     }
@@ -97,6 +134,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _permissionsListener?.cancel();
     super.dispose();
   }
 

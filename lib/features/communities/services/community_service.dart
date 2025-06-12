@@ -170,6 +170,7 @@ class CommunityService {
         'userId': user.uid,
         'name': user.displayName ?? 'Usuario',
         'email': user.email,
+        'profileImageUrl': user.photoURL,
         'role': 'member',
         'joinedAt': FieldValue.serverTimestamp(),
       });

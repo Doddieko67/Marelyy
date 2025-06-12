@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:classroom_mejorado/features/communities/models/community_model.dart';
 import 'package:classroom_mejorado/features/communities/services/community_service.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
@@ -47,6 +48,13 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.bug_report, color: theme.colorScheme.secondary),
+            onPressed: _showAllMembersDebug,
+            tooltip: 'Debug: Ver todos los miembros',
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -147,25 +155,33 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
             ),
           ),
           Expanded(
-            child: StreamBuilder<List<CommunityMember>>(
-              stream: _communityService.getCommunityAdmins(widget.communityId),
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('communities')
+                  .doc(widget.communityId)
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.hasError) {
+                if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
                   return Center(
                     child: Text('Error: ${snapshot.error}'),
                   );
                 }
 
-                final admins = snapshot.data ?? [];
-                final nonOwnerAdmins = admins.where((admin) => 
-                    admin.role == 'admin' && admin.userId != widget.community.ownerId
+                final communityData = snapshot.data!.data() as Map<String, dynamic>;
+                final List<String> memberIds = List<String>.from(communityData['members'] ?? []);
+                final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+                final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
+
+                // Filtrar solo los IDs que son admins pero no owners
+                final nonOwnerAdminIds = memberIds.where((memberId) => 
+                    adminIds.contains(memberId) && !ownerIds.contains(memberId)
                 ).toList();
 
-                if (nonOwnerAdmins.isEmpty) {
+                if (nonOwnerAdminIds.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -199,11 +215,42 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: nonOwnerAdmins.length,
-                  itemBuilder: (context, index) {
-                    final admin = nonOwnerAdmins[index];
-                    return _buildAdminCard(admin, theme);
+                // Obtener datos de usuarios desde la colección users
+                return FutureBuilder<QuerySnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .where(FieldPath.documentId, whereIn: nonOwnerAdminIds)
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.connectionState == ConnectionState.waiting) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+
+                    if (userSnapshot.hasError || !userSnapshot.hasData) {
+                      return Center(
+                        child: Text('Error al cargar administradores'),
+                      );
+                    }
+
+                    final adminUsers = userSnapshot.data!.docs.map((doc) {
+                      final userData = doc.data() as Map<String, dynamic>;
+                      return CommunityMember(
+                        userId: doc.id,
+                        name: userData['name'] ?? userData['displayName'] ?? 'Usuario',
+                        email: userData['email'] ?? '',
+                        profileImageUrl: userData['photoURL'],
+                        role: 'admin',
+                        joinedAt: DateTime.now(),
+                      );
+                    }).toList();
+
+                    return ListView.builder(
+                      itemCount: adminUsers.length,
+                      itemBuilder: (context, index) {
+                        final admin = adminUsers[index];
+                        return _buildAdminCard(admin, theme);
+                      },
+                    );
                   },
                 );
               },
@@ -339,6 +386,121 @@ class _AdminManagementScreenState extends State<AdminManagementScreen> {
     );
   }
 
+  void _showAllMembersDebug() async {
+    try {
+      // EXACTAMENTE igual que Settings: obtener datos desde la colección 'users'
+      final communityDoc = await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(widget.communityId)
+          .get();
+      
+      final communityData = communityDoc.data() as Map<String, dynamic>;
+      final List<String> memberIds = List<String>.from(communityData['members'] ?? []);
+      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
+      
+      final userDocs = await FirebaseFirestore.instance
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: memberIds)
+          .get();
+      
+      final allMembers = userDocs.docs.map((doc) {
+        final userData = doc.data();
+        final userId = doc.id;
+        
+        String role = 'member';
+        if (ownerIds.contains(userId)) {
+          role = 'owner';
+        } else if (adminIds.contains(userId)) {
+          role = 'admin';
+        }
+        
+        return CommunityMember(
+          userId: userId,
+          name: userData['name'] ?? userData['displayName'] ?? 'Usuario',
+          email: userData['email'] ?? '',
+          profileImageUrl: userData['photoURL'],
+          role: role,
+          joinedAt: DateTime.now(),
+        );
+      }).toList();
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Debug: Todos los Miembros (${allMembers.length})'),
+          content: Container(
+            width: double.maxFinite,
+            height: 400,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Lista completa de miembros en la comunidad:\n', 
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                  ...allMembers.map((member) => Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Container(
+                      padding: EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Nombre: ${member.name}', style: TextStyle(fontWeight: FontWeight.w500)),
+                          Text('Email: ${member.email}'),
+                          Text('Role: ${member.role}', style: TextStyle(
+                            color: member.role == 'owner' ? Colors.orange : 
+                                   member.role == 'admin' ? Colors.blue : Colors.green,
+                            fontWeight: FontWeight.bold)),
+                          Text('UserID: ${member.userId}'),
+                          if (member.profileImageUrl != null) 
+                            Text('Imagen: ${member.profileImageUrl!.isNotEmpty ? "Sí" : "No"}'),
+                        ],
+                      ),
+                    ),
+                  )).toList(),
+                  SizedBox(height: 16),
+                  Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Filtros aplicados:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('• Solo role == "member"'),
+                        Text('• Excluye owners: ${ownerIds.join(", ")}'),
+                        Text('• Miembros disponibles: ${allMembers.where((m) => m.role == "member").length}'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar miembros: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   void _showDemoteDialog(CommunityMember admin) {
     showDialog(
       context: context,
@@ -414,12 +576,64 @@ class _PromoteMemberDialogState extends State<_PromoteMemberDialog> {
 
   Future<void> _loadAvailableMembers() async {
     try {
-      final allMembers = await _communityService.getCommunityMembers(widget.communityId).first;
+      // EXACTAMENTE igual que Settings: obtener memberIds del documento principal
+      final communityDoc = await FirebaseFirestore.instance
+          .collection('communities')
+          .doc(widget.communityId)
+          .get();
       
-      // Filtrar solo miembros regulares (no admins ni owner)
+      if (!communityDoc.exists) {
+        setState(() {
+          isLoading = false;
+        });
+        return;
+      }
+      
+      final communityData = communityDoc.data() as Map<String, dynamic>;
+      final List<String> memberIds = List<String>.from(communityData['members'] ?? []);
+      final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+      final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [communityData['ownerId']]);
+      
+      if (memberIds.isEmpty) {
+        setState(() {
+          availableMembers = [];
+          isLoading = false;
+        });
+        return;
+      }
+      
+      // EXACTAMENTE igual que Settings: obtener datos desde la colección 'users'
+      final userDocs = await FirebaseFirestore.instance
+          .collection('users')
+          .where(FieldPath.documentId, whereIn: memberIds)
+          .get();
+      
+      // Convertir a CommunityMember y filtrar
+      final allMembers = userDocs.docs.map((doc) {
+        final userData = doc.data();
+        final userId = doc.id;
+        
+        // Determinar el rol basado en las listas
+        String role = 'member';
+        if (ownerIds.contains(userId)) {
+          role = 'owner';
+        } else if (adminIds.contains(userId)) {
+          role = 'admin';
+        }
+        
+        return CommunityMember(
+          userId: userId,
+          name: userData['name'] ?? userData['displayName'] ?? 'Usuario',
+          email: userData['email'] ?? '',
+          profileImageUrl: userData['photoURL'],
+          role: role,
+          joinedAt: DateTime.now(), // No tenemos esta info en users, pero no es crítica para el filtro
+        );
+      }).toList();
+      
+      // Filtrar solo miembros regulares (no admins ni owners)
       availableMembers = allMembers.where((member) => 
-          member.role == 'member' && 
-          member.userId != widget.community.ownerId
+          member.role == 'member'
       ).toList();
       
       setState(() {
