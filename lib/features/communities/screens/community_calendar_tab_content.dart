@@ -494,7 +494,7 @@ class _CommunityCalendarTabContentState
                         shape: BoxShape.circle,
                       ),
                       selectedDecoration: BoxDecoration(
-                        color: theme.colorScheme.secondary,
+                        color: theme.colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                       markerDecoration: const BoxDecoration(

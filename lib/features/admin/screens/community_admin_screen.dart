@@ -384,7 +384,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
     final theme = Theme.of(context);
     
     return Container(
-      width: 140,
+      width: 150,
       height: 230,
       margin: const EdgeInsets.all(8),
       child: Card(
@@ -843,13 +843,13 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
                     runSpacing: 8,
                     children: [
                       _buildStatCard(
-                        title: 'Total Miembros',
+                        title: 'Miembros',
                         value: _totalMembers.toString(),
                         icon: Icons.people,
                         color: theme.colorScheme.primary,
                       ),
                       _buildStatCard(
-                        title: 'Total Tareas',
+                        title: 'Tareas',
                         value: _totalTasks.toString(),
                         icon: Icons.task,
                         color: Colors.blue,

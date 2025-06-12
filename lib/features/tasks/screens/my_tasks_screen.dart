@@ -26,6 +26,47 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
   DateTime? _selectedDay;
   Map<DateTime, List<Map<String, dynamic>>> _tasksByDate = {};
   bool _isCalendarView = false;
+  
+  // Task data
+  List<QueryDocumentSnapshot> _allTasks = [];
+  bool _isLoading = true; // Start as true for initial load
+  bool _hasLoadedOnce = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyTasks();
+  }
+
+  Future<void> _loadMyTasks() async {
+    final currentUserUid = _auth.currentUser?.uid;
+    if (currentUserUid == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final snapshot = await _firestore
+          .collectionGroup('tasks')
+          .where('assignedToId', isEqualTo: currentUserUid)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      setState(() {
+        _allTasks = snapshot.docs;
+        _groupTasksByDate(_allTasks);
+        _isLoading = false;
+        _hasLoadedOnce = true;
+      });
+    } catch (e) {
+      print('Error loading tasks: $e');
+      setState(() {
+        _isLoading = false;
+        _hasLoadedOnce = true;
+      });
+    }
+  }
 
   // Group tasks by date for calendar
   void _groupTasksByDate(List<QueryDocumentSnapshot> tasks) {
@@ -54,6 +95,64 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
   List<Map<String, dynamic>> _getTasksForDay(DateTime day) {
     final dateKey = DateTime(day.year, day.month, day.day);
     return _tasksByDate[dateKey] ?? [];
+  }
+
+  Widget _buildTasksContent(ThemeData theme) {
+    // Show loading on first load
+    if (!_hasLoadedOnce && _isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          color: theme.colorScheme.primary,
+        ),
+      );
+    }
+    
+    if (_allTasks.isEmpty && _hasLoadedOnce) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.assignment_turned_in_outlined,
+                size: 60,
+                color: theme.colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '¡No tienes tareas asignadas!',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.onBackground,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Parece que no hay tareas que te hayan asignado',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontSize: 16,
+                color: theme.colorScheme.onBackground.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _isCalendarView 
+        ? _buildCalendarView(theme, _allTasks)
+        : _buildListView(theme, _allTasks);
   }
 
   @override
@@ -143,118 +242,17 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
             },
             tooltip: _isCalendarView ? 'Vista de Lista' : 'Vista de Calendario',
           ),
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: theme.colorScheme.primary,
+            ),
+            onPressed: _loadMyTasks,
+            tooltip: 'Actualizar',
+          ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _firestore
-            .collectionGroup('tasks')
-            .where('assignedToId', isEqualTo: currentUserUid)
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(
-                color: theme.colorScheme.primary,
-              ),
-            );
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.error.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.error_outline,
-                      size: 60,
-                      color: theme.colorScheme.error.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Error al cargar tus tareas',
-                    style: TextStyle(
-                      fontFamily: fontFamilyPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Intenta de nuevo más tarde',
-                    style: TextStyle(
-                      fontFamily: fontFamilyPrimary,
-                      fontSize: 16,
-                      color: theme.colorScheme.onBackground.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.assignment_turned_in_outlined,
-                      size: 60,
-                      color: theme.colorScheme.primary.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '¡No tienes tareas asignadas!',
-                    style: TextStyle(
-                      fontFamily: fontFamilyPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onBackground,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Parece que no hay tareas que te hayan asignado',
-                    style: TextStyle(
-                      fontFamily: fontFamilyPrimary,
-                      fontSize: 16,
-                      color: theme.colorScheme.onBackground.withOpacity(0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            );
-          }
-
-          final tasks = snapshot.data!.docs;
-          
-          // Group tasks by date for calendar
-          _groupTasksByDate(tasks);
-
-          return _isCalendarView 
-              ? _buildCalendarView(theme, tasks)
-              : _buildListView(theme, tasks);
-        },
-      ),
+      body: _buildTasksContent(theme),
     );
   }
 
@@ -263,12 +261,15 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
     return Column(
       children: [
         Card(
+          key: const ValueKey('calendar_card'),
           margin: const EdgeInsets.all(16),
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: TableCalendar<Map<String, dynamic>>(
+            child: RepaintBoundary(
+              child: TableCalendar<Map<String, dynamic>>(
+                key: const ValueKey('my_tasks_calendar'),
               firstDay: DateTime.now().subtract(const Duration(days: 365)),
               lastDay: DateTime.now().add(const Duration(days: 365)),
               focusedDay: _focusedDay,
@@ -289,15 +290,15 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                   color: theme.colorScheme.onSurface,
                 ),
                 selectedDecoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 todayDecoration: BoxDecoration(
-                  color: theme.colorScheme.secondary,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 markerDecoration: BoxDecoration(
-                  color: theme.colorScheme.tertiary,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -306,7 +307,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                 titleCentered: true,
                 formatButtonShowsNext: false,
                 formatButtonDecoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
+                  color: theme.colorScheme.primary.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 formatButtonTextStyle: TextStyle(
@@ -336,8 +337,11 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
                 }
               },
               onPageChanged: (focusedDay) {
-                _focusedDay = focusedDay;
+                setState(() {
+                  _focusedDay = focusedDay;
+                });
               },
+              ),
             ),
           ),
         ),
