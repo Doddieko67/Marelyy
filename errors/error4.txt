@@ -1,0 +1,200 @@
+❯ flutter run --dart-define-from-file=env.json
+Launching lib/main.dart on SM A055M in debug mode...
+Running Gradle task 'assembleDebug'...                           2,310ms
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...           5.5s
+I/flutter (24571): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(61)] Using the Impeller rendering backend (Vulkan).
+D/FirebaseAuth(24571): Notifying id token listeners about user ( zVVS6LFabaVM9uzmUGsHdY8DdzC3 ).
+I/FLTFireBGExecutor(24571): Creating background FlutterEngine instance, with args: [--enable-dart-profiling]
+W/libc    (24571): Access denied finding property "vendor.debug.forcibly_enable_mtk_ray_tracing"
+I/flutter (24571): [IMPORTANT:flutter/shell/platform/android/android_context_vk_impeller.cc(61)] Using the Impeller rendering backend (Vulkan).
+D/FLTFireContextHolder(24571): received application context.
+Syncing files to device SM A055M...                                 77ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on SM A055M is available at: http://127.0.0.1:34083/J_2lEX1bcI8=/
+I/flutter (24571): User granted permission: AuthorizationStatus.authorized
+I/Choreographer(24571): Skipped 56 frames!  The application may be doing too much work on its main thread.
+The Flutter DevTools debugger and profiler on SM A055M is available at:
+http://127.0.0.1:9101?uri=http://127.0.0.1:34083/J_2lEX1bcI8=/
+I/FLTFireMsgService(24571): FlutterFirebaseMessagingBackgroundService started!
+I/flutter (24571): User is signed in!
+I/flutter (24571): Redirigiendo a /main (AppShell)
+W/libc    (24571): Access denied finding property "persist.vendor.debug.gpud.enable"
+I/gralloc4(24571): @set_metadata: update dataspace from GM (0x08010000 -> 0x00000000)
+D/BLASTBufferQueue(24571): [SurfaceView[com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity]@0#1](f:0,a:0) onFrameAvailable the first frame is available
+D/BLASTBufferQueue(24571): [SurfaceView[com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity]@0#1](f:0,a:1) acquireNextBufferLocked size=720x1572 mFrameNumber=1 applyTransaction=true mTimestamp=52281561449884(auto) mPendingTransactions.size=0 graphicBufferId=105531641430030 transform=0
+D/SurfaceView@ce6c621(24571): 216450593 setAlpha: alpha=1.0
+I/SurfaceView(24571): 216450593 Changes: creating=false format=false size=false visible=false alpha=true hint=false visible=false left=false top=false z=false attached=true lifecycleStrategy=false
+I/SurfaceView@ce6c621(24571): 216450593 Cur surface: Surface(name=null)/@0xb8286ad
+I/SurfaceView@ce6c621(24571): updateSurface: mVisible = true mSurface.isValid() = true
+I/SurfaceView@ce6c621(24571): updateSurface: mSurfaceCreated = true surfaceChanged = false visibleChanged = false
+I/SurfaceView(24571): 216450593 surfaceRedrawNeeded
+I/SurfaceView(24571): 216450593 finishedDrawing
+V/SurfaceView@ce6c621(24571): Layout: x=0 y=0 w=720 h=1572, frame=Rect(0, 0 - 720, 1572)
+I/Choreographer(24571): Skipped 165 frames!  The application may be doing too much work on its main thread.
+I/ViewRootImpl@41e1dcd[MainActivity](24571): Setup new sync=wmsSync-ViewRootImpl@41e1dcd[MainActivity]#2
+I/ViewRootImpl@41e1dcd[MainActivity](24571): Creating new active sync group ViewRootImpl@41e1dcd[MainActivity]#3
+I/ViewRootImpl@41e1dcd[MainActivity](24571): registerCallbacksForSync syncBuffer=false
+D/SurfaceView(24571): 216450593 updateSurfacePosition RenderWorker, frameNr = 1, position = [0, 0, 720, 1572] surfaceSize = 720x1572
+I/SurfaceView@ce6c621(24571): uSP: rtp = Rect(0, 0 - 720, 1572) rtsw = 720 rtsh = 1572
+I/SurfaceView@ce6c621(24571): onSSPAndSRT: pl = 0 pt = 0 sx = 1.0 sy = 1.0
+I/SurfaceView@ce6c621(24571): aOrMT: ViewRootImpl@41e1dcd[MainActivity] t = android.view.SurfaceControl$Transaction@ecdaa9f fN = 1 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1666 android.graphics.RenderNode$CompositePositionUpdateListener.positionChanged:369 
+I/ViewRootImpl@41e1dcd[MainActivity](24571): mWNT: t=0xb400007cb00c7600 mBlastBufferQueue=0xb400007caff1ee00 fn= 1 mRenderHdrSdrRatio=1.0 caller= android.view.SurfaceView.applyOrMergeTransaction:1598 android.view.SurfaceView.-$$Nest$mapplyOrMergeTransaction:0 android.view.SurfaceView$SurfaceViewPositionUpdateListener.positionChanged:1666 
+I/ViewRootImpl@41e1dcd[MainActivity](24571): Received frameDrawingCallback syncResult=0 frameNum=1.
+I/ViewRootImpl@41e1dcd[MainActivity](24571): mWNT: t=0xb400007ca54abb80 mBlastBufferQueue=0xb400007caff1ee00 fn= 1 mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$8.onFrameDraw:13841 android.view.ThreadedRenderer$1.onFrameDraw:792 <bottom of call stack> 
+I/ViewRootImpl@41e1dcd[MainActivity](24571): Setting up sync and frameCommitCallback
+D/BLASTBufferQueue(24571): [ViewRootImpl@41e1dcd[MainActivity]#0](f:0,a:0) onFrameAvailable the first frame is available
+D/BLASTBufferQueue(24571): [ViewRootImpl@41e1dcd[MainActivity]#0](f:0,a:1) acquireNextBufferLocked size=720x1600 mFrameNumber=1 applyTransaction=true mTimestamp=52281628798499(auto) mPendingTransactions.size=0 graphicBufferId=105531641430033 transform=0
+I/ViewRootImpl@41e1dcd[MainActivity](24571): Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+D/OpenGLRenderer(24571): CFMS:: SetUp Pid : 24571    Tid : 24612
+I/ViewRootImpl@41e1dcd[MainActivity](24571): reportDrawFinished seqId=0
+I/OpenGLRenderer(24571): Davey! duration=2777ms; Flags=1, FrameTimelineVsyncId=5415065, IntendedVsync=52278851772122, Vsync=52281600851642, InputEventId=0, HandleInputStart=52281615594499, AnimationStart=52281615597961, PerformTraversalsStart=52281615599730, DrawStart=52281619347499, FrameDeadline=52278868438789, FrameInterval=52281615140038, FrameStartTime=16661088, SyncQueued=52281621181269, SyncStart=52281621501576, IssueDrawCommandsStart=52281624285269, SwapBuffers=52281627373038, FrameCompleted=52281629982576, DequeueBufferDuration=853769, QueueBufferDuration=991077, GpuCompleted=52281629696346, SwapBuffersCompleted=52281629982576, DisplayPresentTime=528381273489, CommandSubmissionCompleted=52281627373038, 
+I/gralloc4(24571): @set_metadata: update dataspace from GM (0x08010000 -> 0x00000000)
+D/ConnectivityManager(24571): StackLog: [android.net.ConnectivityManager.sendRequestForNetwork(ConnectivityManager.java:4709)] [android.net.ConnectivityManager.registerDefaultNetworkCallbackForUid(ConnectivityManager.java:5433)] [android.net.ConnectivityManager.registerDefaultNetworkCallback(ConnectivityManager.java:5400)] [android.net.ConnectivityManager.registerDefaultNetworkCallback(ConnectivityManager.java:5374)] [com.google.firebase.firestore.remote.AndroidConnectivityMonitor.configureNetworkMonitoring(AndroidConnectivityMonitor.java:87)] [com.google.firebase.firestore.remote.AndroidConnectivityMonitor.<init>(AndroidConnectivityMonitor.java:64)] [com.google.firebase.firestore.remote.RemoteComponenetProvider.createConnectivityMonitor(RemoteComponenetProvider.java:94)] [com.google.firebase.firestore.remote.RemoteComponenetProvider.initialize(RemoteComponenetProvider.java:41)] [com.google.firebase.firestore.core.ComponentProvider.initialize(ComponentProvider.java:158)] [com.google.firebase.firestore.core.FirestoreClient.initialize(FirestoreClient.java:284)] [com.google.firebase.firestore.core.FirestoreClient.lambda$new$0$com-google-firebase-firestore-core-FirestoreClient(FirestoreClient.java:109)] [com.google.firebase.firestore.core.FirestoreClient$$ExternalSyntheticLambda10.run(D8$$SyntheticClass:0)] [com.google.firebase.firestore.util.AsyncQueue.lambda$enqueue$2(AsyncQueue.java:445)] [com.google.firebase.firestore.util.AsyncQueue$$ExternalSyntheticLambda4.call(D8$$SyntheticClass:0)] [com.google.firebase.firestore.util.AsyncQueue$SynchronizedShutdownAwareExecutor.lambda$executeAndReportResult$1(AsyncQueue.java:330)] [com.google.firebase.firestore.util.AsyncQueue$SynchronizedShutdownAwareExecutor$$ExternalSyntheticLambda2.run(D8$$SyntheticClass:0)] [java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:487)] [java.util.concurrent.FutureTask.run(FutureTask.java:264)] [java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:307)] [java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)] [java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)] [com.google.firebase.firestore.util.AsyncQueue$SynchronizedShutdownAwareExecutor$DelayedStartFactory.run(AsyncQueue.java:235)] [java.lang.Thread.run(Thread.java:1012)]
+W/DynamiteModule(24571): Local module descriptor class for com.google.android.gms.providerinstaller.dynamite not found.
+I/DynamiteModule(24571): Considering local module com.google.android.gms.providerinstaller.dynamite:0 and remote module com.google.android.gms.providerinstaller.dynamite:0
+W/ProviderInstaller(24571): Failed to load providerinstaller module: No acceptable module com.google.android.gms.providerinstaller.dynamite found. Local version is 0 and remote version is 0.
+D/nativeloader(24571): Configuring clns-5 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/lib/arm64:/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader(24571): Extending system_exposed_libraries: libaudiomirroring_jni.audiomirroring.samsung.so:libexifa.camera.samsung.so:libjpega.camera.samsung.so:libOpenCv.camera.samsung.so:libImageScreener.camera.samsung.so:libHpr_RecGAE_cvFeature_v1.0.camera.samsung.so:libHprFace_GAE_api.camera.samsung.so:libHprFace_GAE_jni.camera.samsung.so:libObjectAndSceneClassification_2.5_OD.camera.samsung.so:libQREngine.camera.samsung.so:libInteractiveSegmentation.camera.samsung.so:libsmart_cropping.camera.samsung.so:libFacePreProcessing.camera.samsung.so:libFacePreProcessing_jni.camera.samsung.so:libhumantracking_util.camera.samsung.so:libsurfaceutil.camera.samsung.so:libsecimaging.camera.samsung.so:libsce_v1.crypto.samsung.so:lib_vnd_client.dk.samsung.so:lib_native_client.dk.samsung.so:lib_nativeJni.dk.samsung.so:lib.engmodejni.samsung.so:libSFEffect.fonteffect.samsung.so:libknox_remotedesktopclient.knox.samsung.so:libheifcapture_jni.media.samsung.so:libjpegsq.media.samsung.so:libslljpeg.media.samsung.so:libsemimagecrop_jni.media.samsung.
+D/nativeloader(24571): Configuring clns-6 for other apk /system/framework/com.android.media.remotedisplay.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/lib/arm64:/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader(24571): Extending system_exposed_libraries: libaudiomirroring_jni.audiomirroring.samsung.so:libexifa.camera.samsung.so:libjpega.camera.samsung.so:libOpenCv.camera.samsung.so:libImageScreener.camera.samsung.so:libHpr_RecGAE_cvFeature_v1.0.camera.samsung.so:libHprFace_GAE_api.camera.samsung.so:libHprFace_GAE_jni.camera.samsung.so:libObjectAndSceneClassification_2.5_OD.camera.samsung.so:libQREngine.camera.samsung.so:libInteractiveSegmentation.camera.samsung.so:libsmart_cropping.camera.samsung.so:libFacePreProcessing.camera.samsung.so:libFacePreProcessing_jni.camera.samsung.so:libhumantracking_util.camera.samsung.so:libsurfaceutil.camera.samsung.so:libsecimaging.camera.samsung.so:libsce_v1.crypto.samsung.so:lib_vnd_client.dk.samsung.so:lib_native_client.dk.samsung.so:lib_nativeJni.dk.samsung.so:lib.engmodejni.samsung.so:libSFEffect.fonteffect.samsung.so:libknox_remotedesktopclient.knox.samsung.so:libheifcapture_jni.media.samsung.so:libjpegsq.media.samsung.so:libslljpeg.media.samsung.so:libsemimagecrop_jni.media.samsung.
+W/ssroom_mejorado(24571): Loading /data/misc/apexdata/com.android.art/dalvik-cache/arm64/system@framework@com.android.location.provider.jar@classes.odex non-executable as it requires an image which we failed to load
+D/nativeloader(24571): Configuring clns-7 for other apk /system/framework/com.android.location.provider.jar. target_sdk_version=36, uses_libraries=ALL, library_path=/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/lib/arm64:/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+D/nativeloader(24571): Extending system_exposed_libraries: libaudiomirroring_jni.audiomirroring.samsung.so:libexifa.camera.samsung.so:libjpega.camera.samsung.so:libOpenCv.camera.samsung.so:libImageScreener.camera.samsung.so:libHpr_RecGAE_cvFeature_v1.0.camera.samsung.so:libHprFace_GAE_api.camera.samsung.so:libHprFace_GAE_jni.camera.samsung.so:libObjectAndSceneClassification_2.5_OD.camera.samsung.so:libQREngine.camera.samsung.so:libInteractiveSegmentation.camera.samsung.so:libsmart_cropping.camera.samsung.so:libFacePreProcessing.camera.samsung.so:libFacePreProcessing_jni.camera.samsung.so:libhumantracking_util.camera.samsung.so:libsurfaceutil.camera.samsung.so:libsecimaging.camera.samsung.so:libsce_v1.crypto.samsung.so:lib_vnd_client.dk.samsung.so:lib_native_client.dk.samsung.so:lib_nativeJni.dk.samsung.so:lib.engmodejni.samsung.so:libSFEffect.fonteffect.samsung.so:libknox_remotedesktopclient.knox.samsung.so:libheifcapture_jni.media.samsung.so:libjpegsq.media.samsung.so:libslljpeg.media.samsung.so:libsemimagecrop_jni.media.samsung.
+W/ssroom_mejorado(24571): Loading /data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/oat/arm64/base.odex non-executable as it requires an image which we failed to load
+D/nativeloader(24571): Configuring clns-8 for other apk /data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk. target_sdk_version=36, uses_libraries=, library_path=/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/lib/arm64:/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk!/lib/arm64-v8a, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.gms
+I/gralloc4(24571): @set_metadata: update dataspace from GM (0x08010000 -> 0x00000000)
+W/ProviderInstaller(24571): Failed to report request stats: com.google.android.gms.common.security.ProviderInstallerImpl.reportRequestStats [class android.content.Context, long, long]
+W/WindowOnBackDispatcher(24571): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(24571): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+W/ssroom_mejorado(24571): Accessing hidden method Ldalvik/system/VMStack;->getStackClass2()Ljava/lang/Class; (unsupported, reflection, allowed)
+I/ViewRootImpl@41e1dcd[MainActivity](24571): handleWindowFocusChanged: 1 0 call from android.view.ViewRootImpl.-$$Nest$mhandleWindowFocusChanged:0
+D/ViewRootImpl@41e1dcd[MainActivity](24571): mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb400007cb01d8000}
+D/InputMethodManagerUtils(24571): startInputInner - Id : 0
+I/InputMethodManager(24571): startInputInner - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
+E/GoogleApiManager(24571): Failed to get service from broker. 
+E/GoogleApiManager(24571): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(24571): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3069)
+E/GoogleApiManager(24571): 	at android.os.Parcel.createException(Parcel.java:3053)
+E/GoogleApiManager(24571): 	at android.os.Parcel.readException(Parcel.java:3036)
+E/GoogleApiManager(24571): 	at android.os.Parcel.readException(Parcel.java:2978)
+E/GoogleApiManager(24571): 	at axtl.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+E/GoogleApiManager(24571): 	at axrs.z(:com.google.android.gms@252234029@25.22.34 (190400-769260661):143)
+E/GoogleApiManager(24571): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):42)
+E/GoogleApiManager(24571): 	at android.os.Handler.handleCallback(Handler.java:958)
+E/GoogleApiManager(24571): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/GoogleApiManager(24571): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+E/GoogleApiManager(24571): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+E/GoogleApiManager(24571): 	at android.os.Looper.loopOnce(Looper.java:230)
+E/GoogleApiManager(24571): 	at android.os.Looper.loop(Looper.java:319)
+E/GoogleApiManager(24571): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+D/InputMethodManagerUtils(24571): startInputInner - Id : 0
+W/FlagRegistrar(24571): Failed to register com.google.android.gms.providerinstaller#com.example.classroom_mejorado
+W/FlagRegistrar(24571): fghm: 17: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar(24571): 	at fgho.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):13)
+W/FlagRegistrar(24571): 	at gbtj.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):3)
+W/FlagRegistrar(24571): 	at gbtl.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):130)
+W/FlagRegistrar(24571): 	at gbvs.execute(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar(24571): 	at gbtt.f(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar(24571): 	at gbtt.m(:com.google.android.gms@252234029@25.22.34 (190400-769260661):99)
+W/FlagRegistrar(24571): 	at gbtt.r(:com.google.android.gms@252234029@25.22.34 (190400-769260661):17)
+W/FlagRegistrar(24571): 	at eyqj.hX(:com.google.android.gms@252234029@25.22.34 (190400-769260661):35)
+W/FlagRegistrar(24571): 	at emvm.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):12)
+W/FlagRegistrar(24571): 	at gbvs.execute(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar(24571): 	at emvn.b(:com.google.android.gms@252234029@25.22.34 (190400-769260661):18)
+W/FlagRegistrar(24571): 	at emwc.b(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+W/FlagRegistrar(24571): 	at emwe.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):25)
+W/FlagRegistrar(24571): 	at awwd.c(:com.google.android.gms@252234029@25.22.34 (190400-769260661):9)
+W/FlagRegistrar(24571): 	at awyt.q(:com.google.android.gms@252234029@25.22.34 (190400-769260661):48)
+W/FlagRegistrar(24571): 	at awyt.d(:com.google.android.gms@252234029@25.22.34 (190400-769260661):10)
+W/FlagRegistrar(24571): 	at awyt.g(:com.google.android.gms@252234029@25.22.34 (190400-769260661):185)
+W/FlagRegistrar(24571): 	at awyt.onConnectionFailed(:com.google.android.gms@252234029@25.22.34 (190400-769260661):2)
+W/FlagRegistrar(24571): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):70)
+W/FlagRegistrar(24571): 	at android.os.Handler.handleCallback(Handler.java:958)
+W/FlagRegistrar(24571): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+W/FlagRegistrar(24571): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar(24571): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+W/FlagRegistrar(24571): 	at android.os.Looper.loopOnce(Looper.java:230)
+W/FlagRegistrar(24571): 	at android.os.Looper.loop(Looper.java:319)
+W/FlagRegistrar(24571): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+W/FlagRegistrar(24571): Caused by: awur: 17: API: Phenotype.API is not available on this device. Connection failed with: ConnectionResult{statusCode=DEVELOPER_ERROR, resolution=null, message=null}
+W/FlagRegistrar(24571): 	at axre.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):15)
+W/FlagRegistrar(24571): 	at awwg.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+W/FlagRegistrar(24571): 	at awwd.c(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+W/FlagRegistrar(24571): 	... 12 more
+I/InsetsController(24571): onStateChanged: host=com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity, from=android.view.ViewRootImpl$ViewRootHandler.handleMessageImpl:7209, state=InsetsState: {mDisplayFrame=Rect(0, 0 - 720, 1600), mDisplayCutout=DisplayCutout{insets=Rect(0, 59 - 0, 0) waterfall=Insets{left=0, top=0, right=0, bottom=0} boundingRect={Bounds=[Rect(0, 0 - 0, 0), Rect(320, 0 - 400, 59), Rect(0, 0 - 0, 0), Rect(0, 0 - 0, 0)]} cutoutPathParserInfo={CutoutPathParserInfo{displayWidth=720 displayHeight=1600 physicalDisplayWidth=720 physicalDisplayHeight=1600 density={1.875} cutoutSpec={M 0,0 H -21.33333333333333 V 31.46666666666667 H 21.33333333333333 V 0 H 0 Z @dp} rotation={0} scale={1.0} physicalPixelDisplaySizeRatio={1.0}}}}, mRoundedCorners=RoundedCorners{[RoundedCorner{position=TopLeft, radius=0, center=Point(0, 0)}, RoundedCorner{position=TopRight, radius=0, center=Point(0, 0)}, RoundedCorner{position=BottomRight, radius=0, center=Point(0, 0)}, RoundedCorner{position=BottomLeft, radius=0, center=Point(0, 0)}]}  mRoundedCornerFrame=Rect(0, 0 - 720, 1600), mPrivacyIndicatorBounds=PrivacyIndicatorBounds {static bounds=Rect(637, 0 - 720, 59) rotation=0}, mDisplayShape=DisplayShape{ spec=-311912193 displayWidth=720 displayHeight=1600 physicalPixelDisplaySizeRatio=1.0 rotation=0 offsetX=0 offsetY=0 scale=1.0}, mSources= { InsetsSource: {b54d0000 mType=statusBars mFrame=[0,0][720,59] mVisible=true mFlags=[]}, InsetsSource: {b54d0005 mType=mandatorySystemGestures mFrame=[0,0][720,82] mVisible=true mFlags=[]}, InsetsSource: {b54d0006 mType=tappableElement mFrame=[0,0][720,59] mVisible=true mFlags=[]}, InsetsSource: {3 mType=ime mFrame=[0,0][0,0] mVisible=false mFlags=[]}, InsetsSource: {27 mType=displayCutout mFrame=[0,0][720,59] mVisible=true mFlags=[]}, InsetsSource: {49fe0001 mType=navigationBars mFrame=[0,1572][720,1600] mVisible=true mFlags=[SUPPRESS_SCRIM]}, InsetsSource: {49fe0004 mType=systemGestures mFrame=[0,0][56,1600] mVisible=true mFlags=[]}, InsetsSource: {49fe0005 mType=mandatorySystemGestures mFrame=[0,1540][720,1600] mVisible=true mFlags=[]}, InsetsSource: {49fe0006 mType=tappableElement mFrame=[0,0][0,0] mVisible=true mFlags=[]}, InsetsSource: {49fe0024 mType=systemGestures mFrame=[664,0][720,1600] mVisible=true mFlags=[]} }
+I/InsetsSourceConsumer(24571): applyRequestedVisibilityToControl: visible=false, type=ime, host=com.example.classroom_mejorado/com.example.classroom_mejorado.MainActivity
+D/nativeloader(24571): Load /data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk!/lib/arm64-v8a/libconscrypt_gmscore_jni.so using ns clns-8 from class loader (caller=/data/app/~~Y9GmYkqMJR2xnQ0fjJJKSQ==/com.google.android.gms-sPIr7zaNJeGZ5EUTJ1Ls6A==/base.apk): ok
+V/NativeCrypto(24571): Registering com/google/android/gms/org/conscrypt/NativeCrypto's 315 native methods...
+W/ssroom_mejorado(24571): Accessing hidden method Ljava/security/spec/ECParameterSpec;->getCurveName()Ljava/lang/String; (unsupported, reflection, allowed)
+I/ProviderInstaller(24571): Installed default security provider GmsCore_OpenSSL
+D/ConnectivityManager(24571): StackLog: [android.net.ConnectivityManager.sendRequestForNetwork(ConnectivityManager.java:4709)] [android.net.ConnectivityManager.registerDefaultNetworkCallbackForUid(ConnectivityManager.java:5433)] [android.net.ConnectivityManager.registerDefaultNetworkCallback(ConnectivityManager.java:5400)] [android.net.ConnectivityManager.registerDefaultNetworkCallback(ConnectivityManager.java:5374)] [io.grpc.android.AndroidChannelBuilder$AndroidChannel.configureNetworkMonitoring(AndroidChannelBuilder.java:217)] [io.grpc.android.AndroidChannelBuilder$AndroidChannel.<init>(AndroidChannelBuilder.java:198)] [io.grpc.android.AndroidChannelBuilder.build(AndroidChannelBuilder.java:169)] [com.google.firebase.firestore.remote.GrpcCallProvider.initChannel(GrpcCallProvider.java:116)] [com.google.firebase.firestore.remote.GrpcCallProvider.lambda$initChannelTask$6$com-google-firebase-firestore-remote-GrpcCallProvider(GrpcCallProvider.java:242)] [com.google.firebase.firestore.remote.GrpcCallProvider$$ExternalSyntheticLambda4.call(D8$$SyntheticClass:0)] [com.google.android.gms.tasks.zzz.run(com.google.android.gms:play-services-tasks@@18.1.0:1)] [com.google.firebase.firestore.util.ThrottledForwardingExecutor.lambda$execute$0$com-google-firebase-firestore-util-ThrottledForwardingExecutor(ThrottledForwardingExecutor.java:54)] [com.google.firebase.firestore.util.ThrottledForwardingExecutor$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)] [java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)] [java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:644)] [java.lang.Thread.run(Thread.java:1012)]
+W/ssroom_mejorado(24571): Accessing hidden field Ljava/net/Socket;->impl:Ljava/net/SocketImpl; (unsupported, reflection, allowed)
+W/ssroom_mejorado(24571): Accessing hidden method Ljava/security/spec/ECParameterSpec;->setCurveName(Ljava/lang/String;)V (unsupported, reflection, allowed)
+D/ProfileInstaller(24571): Installing profile for com.example.classroom_mejorado
+I/flutter (24571): Token saved to database: d8VLB1IERKKQH8j81uNQ-U:APA91bHjoncJ2-3XFGS8Ty58OdeKaRvohwRKcur2J-8nC3j9M0r2azO-9RMh4f_SbWF3McT6PMh8mPoJr9C7F_CC-FSYPQtHRatBBJ8vlYytwxNx6j3ufvY for user zVVS6LFabaVM9uzmUGsHdY8DdzC3
+I/flutter (24571): FCM Token: d8VLB1IERKKQH8j81uNQ-U:APA91bHjoncJ2-3XFGS8Ty58OdeKaRvohwRKcur2J-8nC3j9M0r2azO-9RMh4f_SbWF3McT6PMh8mPoJr9C7F_CC-FSYPQtHRatBBJ8vlYytwxNx6j3ufvY
+
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following LateError was thrown building StreamBuilder<DocumentSnapshot<Object?>>(dirty, state:
+_StreamBuilderBaseState<DocumentSnapshot<Object?>, AsyncSnapshot<DocumentSnapshot<Object?>>>#bfed2):
+LateInitializationError: Field '_tabController@97518899' has not been initialized.
+
+The relevant error-causing widget was:
+  StreamBuilder<DocumentSnapshot<Object?>>
+  StreamBuilder:file:///home/mauchly/codes/clasrum/classroom_mejorado/lib/features/communities/screens
+  /community_detail_screen.dart:156:15
+
+When the exception was thrown, this was the stack:
+#0      _CommunityDetailScreenState._tabController
+(package:classroom_mejorado/features/communities/screens/community_detail_screen.dart)
+#1      _CommunityDetailScreenState.build.<anonymous closure>
+(package:classroom_mejorado/features/communities/screens/community_detail_screen.dart:248:35)
+#2      StreamBuilder.build (package:flutter/src/widgets/async.dart:459:14)
+#3      _StreamBuilderBaseState.build (package:flutter/src/widgets/async.dart:123:48)
+#4      StatefulElement.build (package:flutter/src/widgets/framework.dart:5823:27)
+#5      ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5715:15)
+#6      StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5874:11)
+#7      Element.rebuild (package:flutter/src/widgets/framework.dart:5427:7)
+#8      BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2694:15)
+#9      BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2752:11)
+#10     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3056:18)
+#11     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1240:21)
+#12     RendererBinding._handlePersistentFrameCallback
+(package:flutter/src/rendering/binding.dart:495:5)
+#13     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1438:15)
+#14     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1351:9)
+#15     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1204:5)
+#16     _invoke (dart:ui/hooks.dart:331:13)
+#17     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)
+#18     _drawFrame (dart:ui/hooks.dart:303:31)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+E/GoogleApiManager(24571): Failed to get service from broker. 
+E/GoogleApiManager(24571): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(24571): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3069)
+E/GoogleApiManager(24571): 	at android.os.Parcel.createException(Parcel.java:3053)
+E/GoogleApiManager(24571): 	at android.os.Parcel.readException(Parcel.java:3036)
+E/GoogleApiManager(24571): 	at android.os.Parcel.readException(Parcel.java:2978)
+E/GoogleApiManager(24571): 	at axtl.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+E/GoogleApiManager(24571): 	at axrs.z(:com.google.android.gms@252234029@25.22.34 (190400-769260661):143)
+E/GoogleApiManager(24571): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):42)
+E/GoogleApiManager(24571): 	at android.os.Handler.handleCallback(Handler.java:958)
+E/GoogleApiManager(24571): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/GoogleApiManager(24571): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+E/GoogleApiManager(24571): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+E/GoogleApiManager(24571): 	at android.os.Looper.loopOnce(Looper.java:230)
+E/GoogleApiManager(24571): 	at android.os.Looper.loop(Looper.java:319)
+E/GoogleApiManager(24571): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+
+
+Launching Fl

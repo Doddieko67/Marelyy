@@ -1,0 +1,70 @@
+Impl.-$$Nest$mhandleWindowFocusChanged:0
+D/ViewRootImpl@41e1dcd[MainActivity](25268): mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb400007cefa60000}
+D/InputMethodManagerUtils(25268): startInputInner - Id : 0
+I/InputMethodManager(25268): startInputInner - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
+I/gralloc4(25268): @set_metadata: update dataspace from GM (0x08010000 -> 0x00000000)
+E/GoogleApiManager(25268): Failed to get service from broker. 
+E/GoogleApiManager(25268): java.lang.SecurityException: Unknown calling package name 'com.google.android.gms'.
+E/GoogleApiManager(25268): 	at android.os.Parcel.createExceptionOrNull(Parcel.java:3069)
+E/GoogleApiManager(25268): 	at android.os.Parcel.createException(Parcel.java:3053)
+E/GoogleApiManager(25268): 	at android.os.Parcel.readException(Parcel.java:3036)
+E/GoogleApiManager(25268): 	at android.os.Parcel.readException(Parcel.java:2978)
+E/GoogleApiManager(25268): 	at axtl.a(:com.google.android.gms@252234029@25.22.34 (190400-769260661):36)
+E/GoogleApiManager(25268): 	at axrs.z(:com.google.android.gms@252234029@25.22.34 (190400-769260661):143)
+E/GoogleApiManager(25268): 	at awyv.run(:com.google.android.gms@252234029@25.22.34 (190400-769260661):42)
+E/GoogleApiManager(25268): 	at android.os.Handler.handleCallback(Handler.java:958)
+E/GoogleApiManager(25268): 	at android.os.Handler.dispatchMessage(Handler.java:99)
+E/GoogleApiManager(25268): 	at chad.mH(:com.google.android.gms@252234029@25.22.34 (190400-769260661):1)
+E/GoogleApiManager(25268): 	at chad.dispatchMessage(:com.google.android.gms@252234029@25.22.34 (190400-769260661):5)
+E/GoogleApiManager(25268): 	at android.os.Looper.loopOnce(Looper.java:230)
+E/GoogleApiManager(25268): 	at android.os.Looper.loop(Looper.java:319)
+E/GoogleApiManager(25268): 	at android.os.HandlerThread.run(HandlerThread.java:67)
+I/gralloc4(25268): @set_metadata: update dataspace from GM (0x08010000 -> 0x00000000)
+
+══╡ EXCEPTION CAUGHT BY WIDGETS LIBRARY ╞═══════════════════════════════════════════════════════════
+The following _TypeError was thrown building Container(bg: BoxDecoration(border: Border(bottom:
+BorderSide(color: Color(alpha: 0.3020, red: 0.7647, green: 0.6078, blue: 0.8275, colorSpace:
+ColorSpace.sRGB))))):
+Null check operator used on a null value
+
+The relevant error-causing widget was:
+  Container
+  Container:file:///home/mauchly/codes/clasrum/classroom_mejorado/lib/features/communities/screens/com
+  munity_detail_screen.dart:253:26
+
+When the exception was thrown, this was the stack:
+#0      _TabBarState._updateTabController (package:flutter/src/material/tabs.dart:1572:29)
+#1      _TabBarState.didChangeDependencies (package:flutter/src/material/tabs.dart:1623:5)
+#2      StatefulElement._firstBuild (package:flutter/src/widgets/framework.dart:5860:11)
+#3      ComponentElement.mount (package:flutter/src/widgets/framework.dart:5691:5)
+...     Normal element mounting (16 frames)
+#19     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4539:16)
+#20     MultiChildRenderObjectElement.inflateWidget
+(package:flutter/src/widgets/framework.dart:7159:36)
+#21     MultiChildRenderObjectElement.mount (package:flutter/src/widgets/framework.dart:7175:32)
+#22     Element.inflateWidget (package:flutter/src/widgets/framework.dart:4539:16)
+#23     Element.updateChild (package:flutter/src/widgets/framework.dart:3998:20)
+#24     ComponentElement.performRebuild (package:flutter/src/widgets/framework.dart:5738:16)
+#25     StatefulElement.performRebuild (package:flutter/src/widgets/framework.dart:5874:11)
+#26     Element.rebuild (package:flutter/src/widgets/framework.dart:5427:7)
+#27     BuildScope._tryRebuild (package:flutter/src/widgets/framework.dart:2694:15)
+#28     BuildScope._flushDirtyElements (package:flutter/src/widgets/framework.dart:2752:11)
+#29     BuildOwner.buildScope (package:flutter/src/widgets/framework.dart:3056:18)
+#30     WidgetsBinding.drawFrame (package:flutter/src/widgets/binding.dart:1240:21)
+#31     RendererBinding._handlePersistentFrameCallback
+(package:flutter/src/rendering/binding.dart:495:5)
+#32     SchedulerBinding._invokeFrameCallback (package:flutter/src/scheduler/binding.dart:1438:15)
+#33     SchedulerBinding.handleDrawFrame (package:flutter/src/scheduler/binding.dart:1351:9)
+#34     SchedulerBinding._handleDrawFrame (package:flutter/src/scheduler/binding.dart:1204:5)
+#35     _invoke (dart:ui/hooks.dart:331:13)
+#36     PlatformDispatcher._drawFrame (dart:ui/platform_dispatcher.dart:444:5)
+#37     _drawFrame (dart:ui/hooks.dart:303:31)
+
+════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Another exception was thrown: Null check operator used on a null value
+Another exception was thrown: A RenderFlex overflowed by 99324 pixels on the bottom.
+Another exception was thrown: 'package:flutter/src/widgets/framework.dart': Failed assertion: line
+6161 pos 14: '_dependents.isEmpty': is not true.
+I/gralloc4(25268): @set_metadata: update dataspace from GM (0x00000000 -> 0x08010000)
+Lost connection to device.
