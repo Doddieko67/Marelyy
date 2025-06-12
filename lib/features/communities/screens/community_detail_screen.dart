@@ -29,11 +29,14 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize with default 5 tabs (for regular members)
+    // Initialize with 6 tabs always, but conditionally show admin tab
     _tabController = TabController(
-      length: 5,
+      length: 6,
       vsync: this,
     );
+    
+    // Add listener to prevent navigation to admin tab for non-admin users
+    _tabController.addListener(_onTabChanged);
     
     _checkUserPermissions();
 
@@ -41,6 +44,17 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
         .collection('communities')
         .doc(widget.communityId)
         .snapshots();
+  }
+
+  void _onTabChanged() {
+    // If user tries to navigate to admin tab (index 4) and is not admin, redirect to settings (index 5)
+    if (_tabController.index == 4 && !_isAdmin) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_tabController.index == 4) {
+          _tabController.animateTo(5); // Go to settings tab
+        }
+      });
+    }
   }
 
   Future<void> _checkUserPermissions() async {
@@ -68,15 +82,6 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
           _isAdmin = newIsAdmin;
           _isLoadingPermissions = false;
         });
-
-        // Only recreate TabController if admin status changed
-        if (newIsAdmin) {
-          _tabController.dispose();
-          _tabController = TabController(
-            length: 6, // 6 tabs for admins
-            vsync: this,
-          );
-        }
       } else {
         setState(() {
           _isLoadingPermissions = false;
@@ -96,42 +101,53 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
   }
 
   List<Widget> _buildTabs() {
-    List<Widget> tabs = [
+    return [
       _buildTab("Chat"),
       _buildTab("Tareas"),
       _buildTab("Calendario"),
       _buildTab("IA"),
+      _isAdmin ? _buildTab("Admin") : _buildHiddenTab(),
+      _buildTab("Ajustes"),
     ];
-    
-    if (_isAdmin) {
-      tabs.add(_buildTab("Admin"));
-    }
-    
-    tabs.add(_buildTab("Ajustes"));
-    return tabs;
+  }
+
+  Widget _buildHiddenTab() {
+    return Tab(
+      child: Container(
+        width: 0,
+        height: 0,
+        child: IgnorePointer(
+          child: Opacity(
+            opacity: 0,
+            child: Text(""),
+          ),
+        ),
+      ),
+    );
   }
 
   List<Widget> _buildTabViewsWithCommunityName(String communityName) {
-    List<Widget> tabViews = [
+    return [
       CommunityChatTabContent(communityId: widget.communityId),
       CommunityTasksTabContent(communityId: widget.communityId),
       CommunityCalendarTabContent(communityId: widget.communityId),
       AIAssistantScreen(communityId: widget.communityId),
-    ];
-    
-    if (_isAdmin) {
-      tabViews.add(CommunityAdminScreen(
+      _isAdmin 
+          ? CommunityAdminScreen(
+              communityId: widget.communityId,
+              communityName: communityName,
+            )
+          : Center(
+              child: Text(
+                'Acceso denegado',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
+      CommunitySettingsScreen(
         communityId: widget.communityId,
         communityName: communityName,
-      ));
-    }
-    
-    tabViews.add(CommunitySettingsScreen(
-      communityId: widget.communityId,
-      communityName: communityName,
-    ));
-    
-    return tabViews;
+      ),
+    ];
   }
 
   // ************ INICIO DEL CAMBIO IMPORTANTE: Simplificación de _buildTab ************
