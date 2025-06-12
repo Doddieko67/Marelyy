@@ -280,7 +280,7 @@ class TaskService {
           .doc(communityId)
           .collection('tasks')
           .where('dueDate', isLessThan: Timestamp.fromDate(now))
-          .where('status', whereNotIn: ['done', 'completed'])
+          .where('state', whereNotIn: ['done', 'completed'])
           .get();
 
       return snapshot.docs
@@ -346,7 +346,7 @@ class TaskService {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final status = data['status'] as String? ?? 'toDo';
+        final status = data['state'] as String? ?? 'toDo';
         
         tasksByStatus[status] = (tasksByStatus[status] ?? 0) + 1;
         

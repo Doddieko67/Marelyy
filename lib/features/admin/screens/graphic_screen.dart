@@ -89,7 +89,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       // Contar tareas activas (no completadas)
       _activeTasks = tasksSnapshot.docs.where((doc) {
         final data = doc.data();
-        final status = data['status'] as String? ?? 'pending';
+        final status = data['state'] as String? ?? 'pending';
         return status != 'completed';
       }).length;
     } catch (e) {

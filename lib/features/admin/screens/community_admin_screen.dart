@@ -102,7 +102,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
       
       for (var doc in tasksSnapshot.docs) {
         final data = doc.data();
-        final status = data['status'] as String? ?? 'toDo';
+        final status = data['state'] as String? ?? 'toDo';
         
         statusCount[status] = (statusCount[status] ?? 0) + 1;
         
@@ -229,7 +229,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
           'id': doc.id,
           'title': data['title'] ?? 'Sin título',
           'description': data['description'] ?? '',
-          'status': data['status'] ?? 'toDo',
+          'status': data['state'] ?? 'toDo',
           'createdAt': data['createdAt'] as Timestamp?,
           'assignedTo': data['assignedTo'] as String?,
           'createdBy': data['createdBy'] as String?,
@@ -277,7 +277,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
         
         for (var taskDoc in tasksSnapshot.docs) {
           final taskData = taskDoc.data();
-          final status = taskData['status'] ?? 'toDo';
+          final status = taskData['state'] ?? 'toDo';
           final dueDate = (taskData['dueDate'] as Timestamp?)?.toDate();
           
           switch (status) {
@@ -384,7 +384,7 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
     final theme = Theme.of(context);
     
     return Container(
-      width: 160,
+      width: 140,
       height: 230,
       margin: const EdgeInsets.all(8),
       child: Card(
@@ -801,28 +801,6 @@ class _CommunityAdminScreenState extends State<CommunityAdminScreen> {
     
     return Scaffold(
       backgroundColor: theme.colorScheme.background,
-      appBar: AppBar(
-        title: Text(
-          'Admin: ${widget.communityName}',
-          style: TextStyle(
-            fontFamily: fontFamilyPrimary,
-            fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onBackground,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: theme.colorScheme.primary,
-            ),
-            onPressed: _loadCommunityData,
-          ),
-        ],
-      ),
       body: _isLoading
           ? Center(
               child: Column(

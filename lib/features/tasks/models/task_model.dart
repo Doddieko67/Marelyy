@@ -41,7 +41,7 @@ class Task {
       id: doc.id,
       title: data['title'] ?? '',
       description: data['description'] ?? '',
-      status: _parseTaskState(data['status']),
+      status: _parseTaskState(data['state']),
       priority: _parseTaskPriority(data['priority']),
       dueDate: (data['dueDate'] as Timestamp?)?.toDate(),
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),

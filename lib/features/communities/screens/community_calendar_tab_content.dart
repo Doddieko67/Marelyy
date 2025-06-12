@@ -61,7 +61,7 @@ class _CommunityCalendarTabContentState
             'id': doc.id,
             'title': data['title'] ?? 'Sin título',
             'description': data['description'] ?? '',
-            'status': data['status'] ?? 'toDo',
+            'status': data['state'] ?? 'toDo',
             'priority': data['priority'] ?? 'medium',
             'dueDate': dueDate,
             'assignedTo': data['assignedTo'] as String?,

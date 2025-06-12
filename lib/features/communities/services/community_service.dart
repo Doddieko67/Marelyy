@@ -242,7 +242,7 @@ class CommunityService {
 
       for (var doc in tasksSnapshot.docs) {
         final data = doc.data();
-        final status = data['status'] as String? ?? 'toDo';
+        final status = data['state'] as String? ?? 'toDo';
         
         tasksByStatus[status] = (tasksByStatus[status] ?? 0) + 1;
         

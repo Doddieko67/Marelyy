@@ -2,7 +2,6 @@ import 'package:classroom_mejorado/features/communities/screens/communities_scre
 import 'package:classroom_mejorado/features/tasks/screens/my_tasks_screen.dart';
 import 'package:classroom_mejorado/features/profile/screens/profile_screen.dart';
 import 'package:classroom_mejorado/shared/navigation/tab_navigation.dart';
-import 'package:classroom_mejorado/features/admin/screens/graphic_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:classroom_mejorado/core/constants/app_colors.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
@@ -23,8 +22,6 @@ class _AppShellState extends State<AppShell> {
       GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _tasksNavigatorKey =
       GlobalKey<NavigatorState>();
-  final GlobalKey<NavigatorState> _adminNavigatorKey =
-      GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _profileNavigatorKey =
       GlobalKey<NavigatorState>();
 
@@ -32,7 +29,6 @@ class _AppShellState extends State<AppShell> {
   late final List<GlobalKey<NavigatorState>> _navigatorKeys = [
     _communitiesNavigatorKey,
     _tasksNavigatorKey,
-    _adminNavigatorKey,
     _profileNavigatorKey,
   ];
 
@@ -47,10 +43,6 @@ class _AppShellState extends State<AppShell> {
       navigatorKey: _tasksNavigatorKey,
       initialScreen: MyTasksScreen(),
     ), // Tareas
-    TabNavigator(
-      navigatorKey: _adminNavigatorKey,
-      initialScreen: const AdminDashboardScreen(),
-    ), // Admin
     TabNavigator(
       navigatorKey: _profileNavigatorKey,
       initialScreen: const ProfileScreen(),
@@ -134,17 +126,13 @@ class _AppShellState extends State<AppShell> {
                   label: 'Mis Tareas', // Traducido
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.admin_panel_settings_outlined),
-                  label: 'Admin',
-                ),
-                BottomNavigationBarItem(
-                  // El índice para 'Profile' en _widgetOptions es 3,
-                  // pero el BottomNavigationBarItem es el cuarto,
-                  // así que su índice en `items` es 3.
-                  // Si _selectedIndex es 3, entonces es la pestaña de Perfil.
+                  // El índice para 'Profile' en _widgetOptions es 2,
+                  // pero el BottomNavigationBarItem es el tercero,
+                  // así que su índice en `items` es 2.
+                  // Si _selectedIndex es 2, entonces es la pestaña de Perfil.
                   icon:
                       _selectedIndex ==
-                          3 // Comparar con el índice del item de perfil
+                          2 // Comparar con el índice del item de perfil
                       ? Icon(Icons.person)
                       : Icon(Icons.person_outline),
                   label: 'Perfil', // Traducido
