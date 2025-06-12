@@ -8,6 +8,7 @@ import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/features/tasks/screens/task_detail_screen.dart';
 import 'package:classroom_mejorado/core/utils/task_utils.dart'
     as task_utils; // ✅ IMPORT FUNCIONES COMPARTIDAS
+import 'package:classroom_mejorado/features/shared/widgets/stat_card_widget.dart';
 
 class MyTasksScreen extends StatefulWidget {
   const MyTasksScreen({super.key});
@@ -31,6 +32,15 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
   List<QueryDocumentSnapshot> _allTasks = [];
   bool _isLoading = true; // Start as true for initial load
   bool _hasLoadedOnce = false;
+  
+  // Statistics
+  int _totalTasks = 0;
+  int _completedTasks = 0;
+  int _inProgressTasks = 0;
+  int _pendingTasks = 0;
+  int _overdueTasks = 0;
+  Map<String, int> _tasksByCommunity = {};
+  bool _showStats = true;
 
   @override
   void initState() {
@@ -56,6 +66,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
       setState(() {
         _allTasks = snapshot.docs;
         _groupTasksByDate(_allTasks);
+        _calculateStatistics(_allTasks);
         _isLoading = false;
         _hasLoadedOnce = true;
       });
@@ -95,6 +106,56 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
   List<Map<String, dynamic>> _getTasksForDay(DateTime day) {
     final dateKey = DateTime(day.year, day.month, day.day);
     return _tasksByDate[dateKey] ?? [];
+  }
+  
+  // Calculate statistics
+  void _calculateStatistics(List<QueryDocumentSnapshot> tasks) {
+    _totalTasks = tasks.length;
+    _completedTasks = 0;
+    _inProgressTasks = 0;
+    _pendingTasks = 0;
+    _overdueTasks = 0;
+    _tasksByCommunity.clear();
+    
+    final now = DateTime.now();
+    
+    for (var taskDoc in tasks) {
+      final taskData = taskDoc.data() as Map<String, dynamic>;
+      final state = taskData['state'] as String? ?? 'todo';
+      final communityName = taskData['communityName'] as String? ?? 'Sin comunidad';
+      final dueDateTimestamp = taskData['dueDate'] as Timestamp?;
+      
+      // Count by community
+      _tasksByCommunity[communityName] = (_tasksByCommunity[communityName] ?? 0) + 1;
+      
+      // Count by status
+      switch (state.toLowerCase()) {
+        case 'done':
+        case 'completed':
+          _completedTasks++;
+          break;
+        case 'doing':
+        case 'inprogress':
+        case 'in_progress':
+          _inProgressTasks++;
+          break;
+        case 'todo':
+        case 'to_do':
+        case 'pending':
+          _pendingTasks++;
+          break;
+      }
+      
+      // Check if overdue
+      if (dueDateTimestamp != null) {
+        final dueDate = dueDateTimestamp.toDate();
+        if (dueDate.isBefore(now) && 
+            state != 'done' && 
+            state != 'completed') {
+          _overdueTasks++;
+        }
+      }
+    }
   }
 
   Widget _buildTasksContent(ThemeData theme) {
@@ -150,6 +211,11 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
       );
     }
 
+    // Show statistics or calendar/list view
+    if (_showStats && !_isCalendarView) {
+      return _buildStatisticsView(theme);
+    }
+    
     return _isCalendarView 
         ? _buildCalendarView(theme, _allTasks)
         : _buildListView(theme, _allTasks);
@@ -230,6 +296,19 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          if (!_isCalendarView)
+            IconButton(
+              icon: Icon(
+                _showStats ? Icons.list : Icons.analytics,
+                color: theme.colorScheme.primary,
+              ),
+              onPressed: () {
+                setState(() {
+                  _showStats = !_showStats;
+                });
+              },
+              tooltip: _showStats ? 'Ver Lista' : 'Ver Estadísticas',
+            ),
           IconButton(
             icon: Icon(
               _isCalendarView ? Icons.view_list : Icons.calendar_month,
@@ -238,6 +317,7 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
             onPressed: () {
               setState(() {
                 _isCalendarView = !_isCalendarView;
+                if (_isCalendarView) _showStats = false;
               });
             },
             tooltip: _isCalendarView ? 'Vista de Lista' : 'Vista de Calendario',
@@ -253,6 +333,147 @@ class _MyTasksScreenState extends State<MyTasksScreen> {
         ],
       ),
       body: _buildTasksContent(theme),
+    );
+  }
+
+  // Build statistics view
+  Widget _buildStatisticsView(ThemeData theme) {
+    final completionRate = _totalTasks > 0 
+        ? (_completedTasks / _totalTasks * 100) 
+        : 0.0;
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Mis Estadísticas',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontFamily: fontFamilyPrimary,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onBackground,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          // Main stats cards
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              StatCardWidget(
+                title: 'Total Tareas',
+                value: _totalTasks.toString(),
+                icon: Icons.assignment,
+                color: theme.colorScheme.primary,
+              ),
+              StatCardWidget(
+                title: 'Completadas',
+                value: _completedTasks.toString(),
+                icon: Icons.check_circle,
+                color: Colors.green,
+                percentage: completionRate,
+              ),
+              StatCardWidget(
+                title: 'En Progreso',
+                value: _inProgressTasks.toString(),
+                icon: Icons.pending_actions,
+                color: Colors.blue,
+              ),
+              StatCardWidget(
+                title: 'Pendientes',
+                value: _pendingTasks.toString(),
+                icon: Icons.assignment_late,
+                color: Colors.orange,
+              ),
+              if (_overdueTasks > 0)
+                StatCardWidget(
+                  title: 'Vencidas',
+                  value: _overdueTasks.toString(),
+                  icon: Icons.warning,
+                  color: Colors.red,
+                ),
+            ],
+          ),
+          
+          // Tasks by community
+          if (_tasksByCommunity.isNotEmpty) ...[
+            const SizedBox(height: 32),
+            Text(
+              'Tareas por Comunidad',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onBackground,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ..._tasksByCommunity.entries.map((entry) {
+              final percentage = _totalTasks > 0 
+                  ? (entry.value / _totalTasks * 100) 
+                  : 0.0;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                elevation: 1,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.group,
+                        size: 20,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  title: Text(
+                    entry.key,
+                    style: TextStyle(
+                      fontFamily: fontFamilyPrimary,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 4),
+                      Text(
+                        '${entry.value} tareas (${percentage.toStringAsFixed(1)}%)',
+                        style: TextStyle(
+                          fontFamily: fontFamilyPrimary,
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(
+                        value: percentage / 100,
+                        backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          theme.colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
+          
+          const SizedBox(height: 32),
+        ],
+      ),
     );
   }
 
