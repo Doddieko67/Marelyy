@@ -5,11 +5,12 @@ class Community {
   final String name;
   final String description;
   final String imageUrl;
-  final String ownerId;
+  final String ownerId; // Mantener por compatibilidad - será el primer propietario
   final String createdByName;
   final DateTime? createdAt;
   final List<String> members;
   final List<String> admins; // Lista de IDs de usuarios admin
+  final List<String> owners; // Lista de IDs de propietarios (múltiples)
   final int memberCount;
   final String? joinCode;
   final String privacy;
@@ -24,6 +25,7 @@ class Community {
     this.createdAt,
     required this.members,
     required this.admins,
+    required this.owners,
     required this.memberCount,
     this.joinCode,
     this.privacy = 'public',
@@ -31,17 +33,25 @@ class Community {
 
   factory Community.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
+    final String ownerId = data['ownerId'] ?? '';
+    
+    // Migrar del sistema antiguo al nuevo: si no hay lista de owners, usar ownerId
+    List<String> owners = List<String>.from(data['owners'] ?? []);
+    if (owners.isEmpty && ownerId.isNotEmpty) {
+      owners = [ownerId];
+    }
     
     return Community(
       id: doc.id,
       name: data['name'] ?? '',
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'] ?? '',
-      ownerId: data['ownerId'] ?? '',
+      ownerId: ownerId, // Mantener por compatibilidad
       createdByName: data['createdByName'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       members: List<String>.from(data['members'] ?? []),
-      admins: List<String>.from(data['admins'] ?? [data['ownerId'] ?? '']), // Owner por defecto es admin
+      admins: List<String>.from(data['admins'] ?? []),
+      owners: owners,
       memberCount: (data['members'] as List<dynamic>?)?.length ?? 0,
       joinCode: data['joinCode'],
       privacy: data['privacy'] ?? 'public',
@@ -53,11 +63,12 @@ class Community {
       'name': name,
       'description': description,
       'imageUrl': imageUrl,
-      'ownerId': ownerId,
+      'ownerId': ownerId, // Mantener por compatibilidad
       'createdByName': createdByName,
       'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
       'members': members,
       'admins': admins,
+      'owners': owners, // Nueva lista de propietarios
       'memberCount': memberCount,
       'joinCode': joinCode,
       'privacy': privacy,
@@ -74,6 +85,7 @@ class Community {
     DateTime? createdAt,
     List<String>? members,
     List<String>? admins,
+    List<String>? owners,
     int? memberCount,
     String? joinCode,
     String? privacy,
@@ -88,6 +100,7 @@ class Community {
       createdAt: createdAt ?? this.createdAt,
       members: members ?? this.members,
       admins: admins ?? this.admins,
+      owners: owners ?? this.owners,
       memberCount: memberCount ?? this.memberCount,
       joinCode: joinCode ?? this.joinCode,
       privacy: privacy ?? this.privacy,
@@ -95,20 +108,24 @@ class Community {
   }
   
   // Métodos de utilidad para verificar roles
-  bool isOwner(String userId) => ownerId == userId;
+  bool isOwner(String userId) => owners.contains(userId);
   
   bool isAdmin(String userId) => admins.contains(userId) || isOwner(userId);
   
   bool isMember(String userId) => members.contains(userId);
   
-  // Obtener todos los IDs de administradores (incluyendo owner)
+  // Obtener todos los IDs de administradores (incluyendo owners)
   List<String> getAllAdminIds() {
-    Set<String> allAdmins = {...admins};
-    if (ownerId.isNotEmpty) {
-      allAdmins.add(ownerId);
-    }
+    Set<String> allAdmins = {...admins, ...owners};
     return allAdmins.toList();
   }
+  
+  // Métodos específicos para múltiples propietarios
+  bool hasMultipleOwners() => owners.length > 1;
+  
+  bool canPromoteToOwner(String userId) => !isOwner(userId) && isMember(userId);
+  
+  bool canDemoteFromOwner(String userId) => isOwner(userId) && owners.length > 1;
 }
 
 class CommunityMember {
@@ -118,6 +135,11 @@ class CommunityMember {
   final String role; // 'owner', 'admin', 'member'
   final DateTime? joinedAt;
   final String? profileImageUrl;
+  
+  // Métodos de utilidad para roles
+  bool get isOwner => role == 'owner';
+  bool get isAdmin => role == 'admin' || isOwner;
+  bool get isMember => role == 'member';
 
   CommunityMember({
     required this.userId,

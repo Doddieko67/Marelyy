@@ -520,15 +520,17 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
             'name': _nameController.text.trim(),
             'description': _descriptionController.text.trim(),
             'imageUrl': _selectedImageUrl!, // Usar la imagen subida
-            'ownerId': user.uid,
+            'ownerId': user.uid, // Mantener por compatibilidad
             'createdByName':
                 user.displayName ?? 'Usuario', // Nombre del creador
             'createdAt': FieldValue.serverTimestamp(),
             'memberCount': 1, // Inicialmente solo el creador
             'members': [user.uid], // El creador es automáticamente miembro
+            'admins': [], // Lista de administradores vacía inicialmente
+            'owners': [user.uid], // El creador es el primer propietario
           });
 
-      // Agregar al usuario como administrador en la subcolección de miembros
+      // Agregar al usuario como propietario en la subcolección de miembros
       await FirebaseFirestore.instance
           .collection('communities')
           .doc(communityId)
@@ -538,7 +540,7 @@ class _CreateCommunityScreenState extends State<CreateCommunityScreen> {
             'userId': user.uid,
             'name': user.displayName ?? 'Usuario',
             'email': user.email,
-            'role': 'admin', // El creador es administrador
+            'role': 'owner', // El creador es propietario
             'joinedAt': FieldValue.serverTimestamp(),
           });
 

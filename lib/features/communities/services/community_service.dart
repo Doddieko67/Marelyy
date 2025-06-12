@@ -480,10 +480,118 @@ class CommunityService {
     return community?.isAdmin(user.uid) ?? false;
   }
 
+  // Verificar si el usuario actual es propietario de la comunidad
+  Future<bool> isCurrentUserOwner(String communityId) async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+
+    final community = await getCommunity(communityId);
+    return community?.isOwner(user.uid) ?? false;
+  }
+
   // Obtener todos los IDs de administradores (para notificaciones)
   Future<List<String>> getAdminIds(String communityId) async {
     final community = await getCommunity(communityId);
     return community?.getAllAdminIds() ?? [];
+  }
+
+  // ===== MÉTODOS PARA MÚLTIPLES PROPIETARIOS =====
+
+  // Promover usuario a propietario
+  Future<bool> promoteToOwner(String communityId, String userId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      // Verificar que el usuario actual es propietario
+      final community = await getCommunity(communityId);
+      if (community == null || !community.isOwner(user.uid)) {
+        throw Exception('Solo los propietarios pueden promover a otros propietarios');
+      }
+
+      // Verificar que el usuario a promover es miembro
+      if (!community.isMember(userId)) {
+        throw Exception('El usuario debe ser miembro de la comunidad');
+      }
+
+      // Agregar a la lista de propietarios
+      await _firestore.collection('communities').doc(communityId).update({
+        'owners': FieldValue.arrayUnion([userId])
+      });
+
+      // Actualizar rol en la subcolección de miembros
+      await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('members')
+          .doc(userId)
+          .update({'role': 'owner'});
+
+      return true;
+    } catch (e) {
+      print('Error promoviendo a propietario: $e');
+      return false;
+    }
+  }
+
+  // Degradar propietario a administrador
+  Future<bool> demoteFromOwner(String communityId, String userId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      // Verificar que el usuario actual es propietario
+      final community = await getCommunity(communityId);
+      if (community == null || !community.isOwner(user.uid)) {
+        throw Exception('Solo los propietarios pueden degradar a otros propietarios');
+      }
+
+      // No puede haber menos de un propietario
+      if (community.owners.length <= 1) {
+        throw Exception('Debe haber al menos un propietario en la comunidad');
+      }
+
+      // No se puede auto-degradar si es el único propietario
+      if (userId == user.uid && community.owners.length == 1) {
+        throw Exception('No puedes degradarte si eres el único propietario');
+      }
+
+      // Remover de la lista de propietarios
+      await _firestore.collection('communities').doc(communityId).update({
+        'owners': FieldValue.arrayRemove([userId])
+      });
+
+      // Agregar a la lista de admins si no está ya
+      await _firestore.collection('communities').doc(communityId).update({
+        'admins': FieldValue.arrayUnion([userId])
+      });
+
+      // Actualizar rol en la subcolección de miembros
+      await _firestore
+          .collection('communities')
+          .doc(communityId)
+          .collection('members')
+          .doc(userId)
+          .update({'role': 'admin'});
+
+      return true;
+    } catch (e) {
+      print('Error degradando propietario: $e');
+      return false;
+    }
+  }
+
+  // Obtener lista de propietarios con información completa
+  Stream<List<CommunityMember>> getCommunityOwners(String communityId) {
+    return _firestore
+        .collection('communities')
+        .doc(communityId)
+        .collection('members')
+        .where('role', isEqualTo: 'owner')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => CommunityMember.fromFirestore(doc)).toList();
+    });
   }
 
   // Remover miembro (solo propietario y admins)
@@ -501,9 +609,9 @@ class CommunityService {
       final community = await getCommunity(communityId);
       if (community == null) return false;
 
-      // No se puede remover al propietario
+      // No se puede remover a un propietario
       if (community.isOwner(userIdToRemove)) {
-        throw Exception('No se puede remover al propietario');
+        throw Exception('No se puede remover a un propietario');
       }
 
       // Remover de la lista de miembros y admins

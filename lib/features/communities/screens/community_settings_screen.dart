@@ -1578,13 +1578,11 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                     communityData['members'] ?? [],
                   );
                   final currentUser = FirebaseAuth.instance.currentUser;
-                  final bool isCurrentUserOwner =
-                      currentUser != null && currentUser.uid == currentOwnerId;
-                  final bool canTransferOwnership =
-                      isCurrentUserOwner && memberIds.length > 1;
                   
-                  // Verificar si el usuario actual es administrador
+                  // Verificar si el usuario actual es administrador o propietario
                   final List<String> adminIds = List<String>.from(communityData['admins'] ?? []);
+                  final List<String> ownerIds = List<String>.from(communityData['owners'] ?? [currentOwnerId]);
+                  final bool isCurrentUserOwner = currentUser != null && ownerIds.contains(currentUser.uid);
                   final bool isCurrentUserAdmin = currentUser != null && 
                       (isCurrentUserOwner || adminIds.contains(currentUser.uid));
 
@@ -1822,13 +1820,13 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                 ],
                               ),
                             ),
-                            if (canTransferOwnership)
+                            if (isCurrentUserOwner)
                               _buildSettingCard(
                                 context: context,
-                                icon: Icons.admin_panel_settings_outlined,
-                                title: 'Transferir propiedad',
-                                subtitle: 'Asignar nuevo propietario',
-                                onTap: _showTransferOwnershipDialog,
+                                icon: Icons.group_add_outlined,
+                                title: 'Gestionar Propietarios',
+                                subtitle: 'Compartir propiedad con otros miembros',
+                                onTap: () => _navigateToOwnerManagement(context, communityData),
                                 iconColor: theme.colorScheme.tertiary,
                               ),
                             if (isCurrentUserOwner)
@@ -1977,8 +1975,19 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                   memberIds,
                                 );
                                 sortedMemberIds.sort((a, b) {
-                                  if (a == currentOwnerId) return -1;
-                                  if (b == currentOwnerId) return 1;
+                                  // Propietarios primero
+                                  final aIsOwner = ownerIds.contains(a);
+                                  final bIsOwner = ownerIds.contains(b);
+                                  if (aIsOwner && !bIsOwner) return -1;
+                                  if (!aIsOwner && bIsOwner) return 1;
+                                  
+                                  // Luego administradores
+                                  final aIsAdmin = adminIds.contains(a);
+                                  final bIsAdmin = adminIds.contains(b);
+                                  if (aIsAdmin && !bIsAdmin) return -1;
+                                  if (!aIsAdmin && bIsAdmin) return 1;
+                                  
+                                  // Finalmente por nombre
                                   final nameA =
                                       userDataMap[a]?['name']
                                           ?.toString()
@@ -2054,8 +2063,8 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                               'Usuario';
                                           final String? userPhotoUrl =
                                               userData?['photoURL'];
-                                          final bool isOwner =
-                                              memberId == currentOwnerId;
+                                          final bool isOwner = ownerIds.contains(memberId);
+                                          final bool isAdmin = adminIds.contains(memberId);
                                           final bool isSelf =
                                               memberId == currentUser?.uid;
                                           return ListTile(
@@ -2101,15 +2110,19 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                             subtitle: Text(
                                               isOwner
                                                   ? 'Propietario'
-                                                  : 'Miembro',
+                                                  : isAdmin
+                                                      ? 'Administrador'
+                                                      : 'Miembro',
                                               style: TextStyle(
                                                 fontFamily: fontFamilyPrimary,
                                                 fontSize: 12,
                                                 color: isOwner
                                                     ? theme.colorScheme.primary
-                                                    : theme
-                                                          .colorScheme
-                                                          .onSurfaceVariant,
+                                                    : isAdmin
+                                                        ? theme.colorScheme.secondary
+                                                        : theme
+                                                              .colorScheme
+                                                              .onSurfaceVariant,
                                               ),
                                             ),
                                             trailing: isOwner
@@ -2119,7 +2132,13 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
                                                         Colors.amber.shade600,
                                                     size: 20,
                                                   )
-                                                : null,
+                                                : isAdmin
+                                                    ? Icon(
+                                                        Icons.admin_panel_settings,
+                                                        color: theme.colorScheme.secondary,
+                                                        size: 18,
+                                                      )
+                                                    : null,
                                           );
                                         },
                                       ),
@@ -2155,6 +2174,7 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
       createdAt: (communityData['createdAt'] as Timestamp?)?.toDate(),
       members: List<String>.from(communityData['members'] ?? []),
       admins: List<String>.from(communityData['admins'] ?? []),
+      owners: List<String>.from(communityData['owners'] ?? [communityData['ownerId'] ?? '']),
       memberCount: (communityData['members'] as List<dynamic>?)?.length ?? 0,
       joinCode: communityData['joinCode'],
       privacy: communityData['privacy'] ?? 'public',
@@ -2167,6 +2187,33 @@ class _CommunitySettingsScreenState extends State<CommunitySettingsScreen>
           communityId: widget.communityId,
           community: community,
         ),
+      ),
+    );
+  }
+
+  // Navegar a la pantalla de gestión de propietarios
+  void _navigateToOwnerManagement(BuildContext context, Map<String, dynamic> communityData) {
+    final community = Community(
+      id: widget.communityId,
+      name: communityData['name'] ?? widget.communityName,
+      description: communityData['description'] ?? '',
+      imageUrl: communityData['imageUrl'] ?? '',
+      ownerId: communityData['ownerId'] ?? '',
+      createdByName: communityData['createdByName'] ?? '',
+      createdAt: (communityData['createdAt'] as Timestamp?)?.toDate(),
+      members: List<String>.from(communityData['members'] ?? []),
+      admins: List<String>.from(communityData['admins'] ?? []),
+      owners: List<String>.from(communityData['owners'] ?? [communityData['ownerId'] ?? '']),
+      memberCount: (communityData['members'] as List<dynamic>?)?.length ?? 0,
+      joinCode: communityData['joinCode'],
+      privacy: communityData['privacy'] ?? 'public',
+    );
+
+    // TODO: Crear OwnerManagementScreen
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Gestión de propietarios - Próximamente'),
+        backgroundColor: Colors.blue,
       ),
     );
   }
