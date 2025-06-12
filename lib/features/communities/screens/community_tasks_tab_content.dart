@@ -62,9 +62,11 @@ class _CommunityTasksTabContentState extends State<CommunityTasksTabContent> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      body: StreamBuilder<QuerySnapshot>(
+    return Stack(
+      children: [
+        Container(
+          color: theme.colorScheme.background,
+          child: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('communities')
             .doc(widget.communityId)
@@ -424,28 +426,34 @@ class _CommunityTasksTabContentState extends State<CommunityTasksTabContent> {
             },
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  NewTaskScreen(communityId: widget.communityId),
-            ),
-          );
-        },
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-        icon: const Icon(Icons.add),
-        label: Text(
-          'Nueva Tarea',
-          style: TextStyle(
-            fontFamily: fontFamilyPrimary,
-            fontWeight: FontWeight.w600,
           ),
         ),
-        elevation: 4,
-      ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      NewTaskScreen(communityId: widget.communityId),
+                ),
+              );
+            },
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+            icon: const Icon(Icons.add),
+            label: Text(
+              'Nueva Tarea',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            elevation: 4,
+          ),
+        ),
+      ],
     );
   }
 }

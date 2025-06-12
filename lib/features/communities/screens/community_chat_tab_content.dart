@@ -486,10 +486,9 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
     final theme = Theme.of(context);
     final currentUser = FirebaseAuth.instance.currentUser;
 
-    return Scaffold(
-      // El Scaffold ya estaba, lo cual es bueno
-      backgroundColor: theme.colorScheme.background, // Fondo general
-      body: Column(
+    return Container(
+      color: theme.colorScheme.background, // Fondo general
+      child: Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(

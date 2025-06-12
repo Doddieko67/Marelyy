@@ -420,9 +420,11 @@ class _CommunityCalendarTabContentState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      body: _isLoading
+    return Stack(
+      children: [
+        Container(
+          color: theme.colorScheme.background,
+          child: _isLoading
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -610,14 +612,20 @@ class _CommunityCalendarTabContentState
                 ),
               ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _loadTasksWithDeadlines,
-        backgroundColor: theme.colorScheme.primary,
-        child: Icon(
-          Icons.refresh,
-          color: theme.colorScheme.onPrimary,
         ),
-      ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            onPressed: _loadTasksWithDeadlines,
+            backgroundColor: theme.colorScheme.primary,
+            child: Icon(
+              Icons.refresh,
+              color: theme.colorScheme.onPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

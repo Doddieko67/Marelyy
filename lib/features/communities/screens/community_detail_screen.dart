@@ -297,9 +297,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
                 ),
 
                 // Tabs de la comunidad
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3.0),
-                  child: Container(
+                Container(
                     decoration: BoxDecoration(
                       border: Border(
                         bottom: BorderSide(
@@ -337,7 +335,6 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
                       tabs: _buildTabs(),
                       // ************ FIN DEL CAMBIO ************
                     ),
-                  ),
                 ),
 
                 // Contenido de las pestañas

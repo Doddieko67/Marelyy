@@ -92,9 +92,11 @@ class _RefactoredCommunityCalendarTabContentState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.colorScheme.background,
-      body: Consumer<TaskProvider>(
+    return Stack(
+      children: [
+        Container(
+          color: theme.colorScheme.background,
+          child: Consumer<TaskProvider>(
         builder: (context, taskProvider, child) {
           if (taskProvider.isLoading) {
             return const LoadingWidget(message: 'Cargando calendario...');
@@ -261,19 +263,25 @@ class _RefactoredCommunityCalendarTabContentState
             ],
           );
         },
-      ),
-      floatingActionButton: Consumer<TaskProvider>(
-        builder: (context, taskProvider, child) {
-          return FloatingActionButton(
-            onPressed: () => taskProvider.loadCalendarTasks(widget.communityId),
-            backgroundColor: theme.colorScheme.primary,
-            child: Icon(
-              Icons.refresh,
-              color: theme.colorScheme.onPrimary,
-            ),
-          );
-        },
-      ),
+          ),
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: Consumer<TaskProvider>(
+            builder: (context, taskProvider, child) {
+              return FloatingActionButton(
+                onPressed: () => taskProvider.loadCalendarTasks(widget.communityId),
+                backgroundColor: theme.colorScheme.primary,
+                child: Icon(
+                  Icons.refresh,
+                  color: theme.colorScheme.onPrimary,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
