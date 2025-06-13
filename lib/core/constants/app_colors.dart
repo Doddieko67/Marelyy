@@ -1,6 +1,19 @@
 // classroom_mejorado/theme/app_colors.dart
 import 'package:flutter/material.dart';
 
+// AppColors class for theme system
+class AppColors {
+  // Primary colors
+  static const Color primary = Color(0xFF7D3C98);
+  static const Color secondary = Color(0xFFE197FF);
+  static const Color tertiary = Color(0xFFC39BD3);
+  static const Color error = Color(0xFFE53E3E);
+  
+  // Text colors
+  static const Color textPrimary = Color(0xFF4A235A);
+  static const Color textSecondary = Color(0xFF7D3C98);
+}
+
 const Color bgColor = Color(0xFFF3EFFF); // Originalmente para fondo claro
 const Color textDarkColor = Color(
   0xFF4A235A,

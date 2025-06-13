@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/features/communities/screens/create_community_screen.dart';
+import 'package:classroom_mejorado/features/shared/widgets/quick_stats_widget.dart';
 
 class CommunitiesScreen extends StatefulWidget {
   const CommunitiesScreen({super.key});
@@ -326,9 +327,12 @@ class _CommunitiesScreenState extends State<CommunitiesScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            // Quick Stats Widget
+            const QuickStatsWidget(),
+            
             // My Communities Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 12.0),
+              padding: const EdgeInsets.fromLTRB(16.0, 0.0, 16.0, 12.0),
               child: Text(
                 "Mis Comunidades",
                 style: theme.textTheme.headlineSmall?.copyWith(

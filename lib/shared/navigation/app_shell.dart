@@ -2,6 +2,8 @@ import 'package:classroom_mejorado/features/communities/screens/communities_scre
 import 'package:classroom_mejorado/features/tasks/screens/my_tasks_screen.dart';
 import 'package:classroom_mejorado/features/profile/screens/profile_screen.dart';
 import 'package:classroom_mejorado/shared/navigation/tab_navigation.dart';
+import 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart';
+import 'package:classroom_mejorado/features/shared/widgets/floating_search_button.dart';
 import 'package:flutter/material.dart';
 import 'package:classroom_mejorado/core/constants/app_colors.dart';
 import 'package:classroom_mejorado/core/constants/app_typography.dart';

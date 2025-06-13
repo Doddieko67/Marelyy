@@ -272,7 +272,7 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: theme.colorScheme.secondary.withOpacity(0.1), // Más sutil
+        color: Colors.purpleAccent.shade400.withOpacity(0.1), // Más sutil
       ),
       child: photoURL != null && photoURL.isNotEmpty
           ? ClipRRect(
@@ -312,8 +312,8 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
         // Usar un degradado o un color más vibrante para avatares por defecto
         gradient: LinearGradient(
           colors: [
-            theme.colorScheme.primary.withOpacity(0.7),
-            theme.colorScheme.secondary.withOpacity(0.7),
+            theme.colorScheme.primary.withValues(alpha: 0.7),
+            theme.colorScheme.secondary.withValues(alpha: 0.7),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -438,7 +438,7 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
                           messageText,
                           style: TextStyle(
                             color: isMe
-                                ? theme.colorScheme.onPrimary
+                                ? theme.colorScheme.surfaceContainerHighest
                                 : theme.colorScheme.onSurfaceVariant,
                             fontSize: 15,
                             height: 1.3,
@@ -455,9 +455,9 @@ class _CommunityChatTabContentState extends State<CommunityChatTabContent> {
                               fontSize: 10,
                               color:
                                   (isMe
-                                          ? theme.colorScheme.onPrimary
+                                          ? theme.colorScheme.surfaceContainerHighest
                                           : theme.colorScheme.onSurfaceVariant)
-                                      .withOpacity(0.7),
+                                      .withValues(alpha: 0.7),
                             ),
                           ),
                         ),

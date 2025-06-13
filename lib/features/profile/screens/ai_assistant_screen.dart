@@ -6,11 +6,13 @@ import 'package:intl/intl.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:classroom_mejorado/core/constants/app_typography.dart';
 import 'package:classroom_mejorado/core/utils/task_utils.dart'
     as task_utils; // ✅ IMPORTADO
+import 'package:classroom_mejorado/core/services/ai_history_service.dart';
 
 // Configuración de Gemini - REEMPLAZA CON TU API KEY
 const String GEMINI_API_KEY = String.fromEnvironment('GEMINI_API_KEY');
@@ -99,8 +101,8 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeGeminiAndChat();
-    _loadCommunityData(); // Se llamará después de _initializeGeminiAndChat
+    _initializeAI(); // Solo inicializar el modelo, no la sesión de chat
+    _loadCommunityData();
   }
 
   @override
@@ -110,7 +112,8 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     super.dispose();
   }
 
-  void _initializeGeminiAndChat() {
+  // Solo inicializar el modelo de IA, no la sesión de chat
+  void _initializeAI() {
     if (GEMINI_API_KEY.isEmpty) {
       _showErrorOnUIThread(
         'Error de Configuración: GEMINI_API_KEY no encontrada. El asistente de IA está deshabilitado. Por favor, configura la variable de entorno.',
@@ -138,12 +141,8 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         ],
       );
 
-      _chatSession = _model!.startChat(
-        history: [
-          Content.text(_getSystemPrompt()),
-        ], // Iniciar con el prompt del sistema
-      );
-      _initializeWelcomeMessage();
+      // Cargar historial después de inicializar el modelo
+      _loadChatHistory();
     } catch (e) {
       print("Error inicializando Gemini: $e");
       _showErrorOnUIThread(
@@ -152,9 +151,22 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
     }
   }
 
+  // Crear sesión de chat con historial específico
+  void _createChatSession(List<Content> history) {
+    if (_model == null) return;
+    
+    try {
+      _chatSession = _model!.startChat(history: history);
+    } catch (e) {
+      print("Error creando sesión de chat: $e");
+      // Fallback: crear sesión solo con prompt del sistema
+      _chatSession = _model!.startChat(history: [Content.text(_getSystemPrompt())]);
+    }
+  }
+
   void _initializeWelcomeMessage() {
-    // Solo añadir mensaje de bienvenida si Gemini se inicializó
-    if (_model != null && _chatSession != null) {
+    // Solo añadir mensaje de bienvenida si Gemini se inicializó y no hay mensajes cargados
+    if (_model != null && _chatSession != null && _messages.isEmpty) {
       _messages.add(
         AIMessage(
           id: 'initial-welcome',
@@ -165,6 +177,108 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         ),
       );
       if (mounted) setState(() {});
+    }
+  }
+
+  // Cargar historial de chat desde Firebase
+  Future<void> _loadChatHistory() async {
+    try {
+      setState(() {
+        _isLoadingData = true;
+      });
+
+      print('Loading chat history for community: ${widget.communityId}');
+      final history = await AIHistoryService.getAIChatHistory(widget.communityId);
+      print('Loaded ${history.length} messages from history');
+      
+      if (history.isNotEmpty) {
+        final List<AIMessage> loadedMessages = [];
+        
+        for (final messageData in history) {
+          final messageType = messageData['messageType'] as String;
+          final content = messageData['content'] as String? ?? '';
+          final timestamp = messageData['timestamp'] as Timestamp?;
+          
+          if (messageType == 'user') {
+            loadedMessages.add(
+              AIMessage(
+                id: messageData['id'],
+                content: content,
+                type: MessageType.user,
+                timestamp: timestamp?.toDate() ?? DateTime.now(),
+              ),
+            );
+          } else if (messageType == 'ai') {
+            loadedMessages.add(
+              AIMessage(
+                id: messageData['id'],
+                content: content,
+                type: MessageType.ai,
+                timestamp: timestamp?.toDate() ?? DateTime.now(),
+                taskSuggestion: messageData['taskSuggestion'],
+                multipleTasks: messageData['multipleTasks'] != null 
+                    ? List<Map<String, dynamic>>.from(messageData['multipleTasks'])
+                    : null,
+                updateTaskData: messageData['updateTaskData'],
+                deleteTaskData: messageData['deleteTaskData'],
+                analysisData: messageData['analysisData'],
+              ),
+            );
+          }
+        }
+        
+        setState(() {
+          _messages.clear();
+          _messages.addAll(loadedMessages);
+        });
+
+        // Crear sesión de chat con historial completo
+        _createChatSessionWithHistory(loadedMessages);
+      } else {
+        // No hay historial, crear sesión nueva y mostrar mensaje de bienvenida
+        _createChatSession([Content.text(_getSystemPrompt())]);
+        _initializeWelcomeMessage();
+      }
+      
+    } catch (e) {
+      print('Error loading chat history: $e');
+      // Si hay error, crear sesión básica y mostrar mensaje de bienvenida
+      _createChatSession([Content.text(_getSystemPrompt())]);
+      _initializeWelcomeMessage();
+    } finally {
+      setState(() {
+        _isLoadingData = false;
+      });
+    }
+  }
+
+  // Crear sesión de chat con historial de mensajes específico
+  void _createChatSessionWithHistory(List<AIMessage> messages) {
+    if (_model == null) return;
+
+    try {
+      // Crear historial para Gemini (limitar a los últimos 30 mensajes para mantener más contexto)
+      final recentMessages = messages.length > 30 
+          ? messages.sublist(messages.length - 30)
+          : messages;
+
+      final List<Content> history = [Content.text(_getSystemPrompt())];
+      
+      for (final message in recentMessages) {
+        if (message.type == MessageType.user) {
+          history.add(Content.text(message.content));
+        } else if (message.type == MessageType.ai) {
+          history.add(Content.model([TextPart(message.content)]));
+        }
+      }
+
+      // Crear nueva sesión de chat con historial
+      _chatSession = _model!.startChat(history: history);
+      print('Chat session created with ${history.length} messages in history');
+    } catch (e) {
+      print('Error creating chat session with history: $e');
+      // Si falla, crear sesión nueva sin historial
+      _createChatSession([Content.text(_getSystemPrompt())]);
     }
   }
 
@@ -507,6 +621,9 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
       _messages.add(userMessage);
       _isTyping = true; // El indicador de "escribiendo..." general se activa
     });
+
+    // Guardar el mensaje del usuario en el chat persistente
+    _saveMessageToChat(userMessage);
 
     final userInput = _messageController.text.trim();
     _messageController.clear();
@@ -958,7 +1075,7 @@ MÉTRICAS RESUMEN:
         return;
       }
 
-      // Actualizar el mensaje existente con el contenido final y marcar isStreaming false
+      // Actualizar el mensaje existiente con el contenido final y marcar isStreaming false
       AIMessage existingMessage = _messages[msgIndex];
       _messages[msgIndex] = AIMessage(
         id: existingMessage.id,
@@ -972,7 +1089,150 @@ MÉTRICAS RESUMEN:
         _messages[msgIndex],
       ); // Ahora procesar el contenido
     });
+    
+    // Guardar el mensaje de IA en el chat persistente
+    final aiMessage = _messages.firstWhere((m) => m.id == messageId);
+    await _saveMessageToChat(aiMessage);
+    
     _scrollToBottom();
+  }
+
+  // Guardar mensaje en el chat persistente
+  Future<void> _saveMessageToChat(AIMessage message) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('No user logged in, cannot save message');
+        return;
+      }
+
+      print('Saving message: ${message.content.substring(0, math.min(50, message.content.length))}...');
+      
+      final messageId = await AIHistoryService.saveAIMessage(
+        communityId: widget.communityId,
+        content: message.content,
+        messageType: message.type == MessageType.user ? 'user' : 'ai',
+        userId: user.uid,
+        userName: user.displayName ?? 'Usuario',
+        userPhotoURL: user.photoURL,
+        taskSuggestion: message.taskSuggestion,
+        multipleTasks: message.multipleTasks,
+        updateTaskData: message.updateTaskData,
+        deleteTaskData: message.deleteTaskData,
+        analysisData: message.analysisData,
+      );
+      
+      print('Message saved with ID: $messageId');
+    } catch (e) {
+      print('Error saving message to chat: $e');
+      // No mostrar error al usuario, es una funcionalidad secundaria
+    }
+  }
+
+  // Mostrar diálogo para limpiar el chat
+  Future<void> _showClearChatDialog() async {
+    final theme = Theme.of(context);
+    
+    // Verificar si el usuario es admin
+    bool isAdmin = false;
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final communityDoc = await FirebaseFirestore.instance
+            .collection('communities')
+            .doc(widget.communityId)
+            .get();
+        
+        if (communityDoc.exists) {
+          final data = communityDoc.data()!;
+          isAdmin = data['ownerId'] == user.uid || 
+                   (data['admins'] as List?)?.contains(user.uid) == true;
+        }
+      }
+    } catch (e) {
+      print('Error checking admin status: $e');
+    }
+
+    if (!isAdmin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Solo los administradores pueden limpiar el chat'),
+          backgroundColor: theme.colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Limpiar chat',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: fontFamilyPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          '¿Estás seguro de que quieres limpiar todo el historial del chat con la IA? Esta acción no se puede deshacer y será visible para todos los miembros.',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontFamily: fontFamilyPrimary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              'Limpiar',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                color: theme.colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await AIHistoryService.clearChatHistory(widget.communityId);
+        setState(() {
+          _messages.clear();
+        });
+        _initializeWelcomeMessage();
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Chat limpiado exitosamente'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al limpiar el chat: $e'),
+              backgroundColor: theme.colorScheme.error,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    }
   }
 
   // En AIAssistantScreen.dart ... dentro de _AIAssistantScreenState
@@ -1000,14 +1260,7 @@ MÉTRICAS RESUMEN:
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('La IA sugiere actualizar la tarea con ID: $taskId.'),
-            if (reason != null) ...[
-              SizedBox(height: 8),
-              Text(
-                'Razón: $reason',
-                style: TextStyle(fontStyle: FontStyle.italic),
-              ),
-            ],
+
             SizedBox(height: 16),
             Text(
               'Cambios propuestos:',
@@ -1749,7 +2002,7 @@ Formato de respuesta:
       leadingIcon = Icons.error_outline_rounded;
     } else if (isUser) {
       backgroundColor = theme.colorScheme.primary;
-      textColor = theme.colorScheme.onPrimary;
+      textColor = theme.colorScheme.surfaceContainerHighest;
     } else {
       backgroundColor = theme.colorScheme.surface;
       textColor = theme.colorScheme.onSurface;
@@ -2749,6 +3002,64 @@ Formato de respuesta:
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
+          // Botón de opciones de chat
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: theme.colorScheme.primary,
+            ),
+            tooltip: 'Opciones de chat',
+            onSelected: (value) async {
+              switch (value) {
+                case 'clear':
+                  await _showClearChatDialog();
+                  break;
+                case 'refresh':
+                  await _loadChatHistory();
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.refresh,
+                      size: 20,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Actualizar chat',
+                      style: TextStyle(fontFamily: fontFamilyPrimary),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'clear',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.clear_all,
+                      size: 20,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Limpiar chat',
+                      style: TextStyle(
+                        fontFamily: fontFamilyPrimary,
+                        color: theme.colorScheme.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
           PopupMenuButton<AnalysisType>(
             icon: Icon(
               Icons.analytics_outlined,

@@ -1,0 +1,169 @@
+❯ flutter run --dart-define-from-file=env.json
+Launching lib/main.dart on SM A055M in debug mode...
+lib/main.dart:233:24: Error: Can't find ')' to match '('.
+    return AppProviders(
+                       ^
+lib/main.dart:306:9: Error: Duplicated named argument 'title'.
+        title: 'Taskify',
+        ^^^^^
+lib/main.dart:311:9: Error: Duplicated named argument 'navigatorKey'.
+        navigatorKey: navigatorKey,
+        ^^^^^^^^^^^^
+lib/main.dart:312:9: Error: Duplicated named argument 'initialRoute'.
+        initialRoute: '/',
+        ^^^^^^^^^^^^
+lib/shared/navigation/app_shell.dart:164:7: Error: No named parameter with the name 'floatingActionButton'.
+      floatingActionButton: Stack(
+      ^^^^^^^^^^^^^^^^^^^^
+../../../development/flutter/packages/flutter/lib/src/widgets/pop_scope.dart:86:9: Context: Found this candidate, but the arguments don't match.
+  const PopScope({
+        ^^^^^^^^
+lib/core/theme/app_theme.dart:11:16: Error: Undefined name 'AppColors'.
+      primary: AppColors.primary,
+               ^^^^^^^^^
+lib/core/theme/app_theme.dart:12:18: Error: Undefined name 'AppColors'.
+      secondary: AppColors.secondary,
+                 ^^^^^^^^^
+lib/core/theme/app_theme.dart:13:17: Error: Undefined name 'AppColors'.
+      tertiary: AppColors.tertiary,
+                ^^^^^^^^^
+lib/core/theme/app_theme.dart:14:14: Error: Undefined name 'AppColors'.
+      error: AppColors.error,
+             ^^^^^^^^^
+lib/core/theme/app_theme.dart:16:18: Error: Undefined name 'AppColors'.
+      onSurface: AppColors.textPrimary,
+                 ^^^^^^^^^
+lib/core/theme/app_theme.dart:18:25: Error: Undefined name 'AppColors'.
+      onSurfaceVariant: AppColors.textSecondary,
+                        ^^^^^^^^^
+lib/core/theme/app_theme.dart:70:45: Error: Undefined name 'AppColors'.
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                            ^^^^^^^^^
+lib/core/theme/app_theme.dart:74:45: Error: Undefined name 'AppColors'.
+        borderSide: const BorderSide(color: AppColors.error, width: 1),
+                                            ^^^^^^^^^
+lib/core/theme/app_theme.dart:83:26: Error: Undefined name 'AppColors'.
+      selectedItemColor: AppColors.primary,
+                         ^^^^^^^^^
+lib/core/theme/app_theme.dart:84:28: Error: Undefined name 'AppColors'.
+      unselectedItemColor: AppColors.textSecondary,
+                           ^^^^^^^^^
+lib/core/theme/app_theme.dart:92:22: Error: Undefined name 'AppColors'.
+      selectedColor: AppColors.primary.withOpacity(0.2),
+                     ^^^^^^^^^
+lib/core/theme/app_theme.dart:34:16: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+ - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('../../../development/flutter/packages/flutter/lib/src/material/card_theme.dart').
+ - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('../../../development/flutter/packages/flutter/lib/src/material/card_theme.dart').
+    cardTheme: CardTheme(
+               ^
+lib/core/theme/app_theme.dart:109:16: Error: Undefined name 'AppColors'.
+      primary: AppColors.primary,
+               ^^^^^^^^^
+lib/core/theme/app_theme.dart:110:18: Error: Undefined name 'AppColors'.
+      secondary: AppColors.secondary,
+                 ^^^^^^^^^
+lib/core/theme/app_theme.dart:111:17: Error: Undefined name 'AppColors'.
+      tertiary: AppColors.tertiary,
+                ^^^^^^^^^
+lib/core/theme/app_theme.dart:112:14: Error: Undefined name 'AppColors'.
+      error: AppColors.error,
+             ^^^^^^^^^
+lib/core/theme/app_theme.dart:171:45: Error: Undefined name 'AppColors'.
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                                            ^^^^^^^^^
+lib/core/theme/app_theme.dart:175:45: Error: Undefined name 'AppColors'.
+        borderSide: const BorderSide(color: AppColors.error, width: 1),
+                                            ^^^^^^^^^
+lib/core/theme/app_theme.dart:185:26: Error: Undefined name 'AppColors'.
+      selectedItemColor: AppColors.primary,
+                         ^^^^^^^^^
+lib/core/theme/app_theme.dart:194:22: Error: Undefined name 'AppColors'.
+      selectedColor: AppColors.primary.withOpacity(0.3),
+                     ^^^^^^^^^
+lib/core/theme/app_theme.dart:134:16: Error: The argument type 'CardTheme' can't be assigned to the parameter type 'CardThemeData?'.
+ - 'CardTheme' is from 'package:flutter/src/material/card_theme.dart' ('../../../development/flutter/packages/flutter/lib/src/material/card_theme.dart').
+ - 'CardThemeData' is from 'package:flutter/src/material/card_theme.dart' ('../../../development/flutter/packages/flutter/lib/src/material/card_theme.dart').
+    cardTheme: CardTheme(
+               ^
+lib/features/splash/screens/splash_screen.dart:112:15: Error: Undefined name 'AppColors'.
+              AppColors.primary,
+              ^^^^^^^^^
+lib/features/splash/screens/splash_screen.dart:113:15: Error: Undefined name 'AppColors'.
+              AppColors.secondary,
+              ^^^^^^^^^
+lib/features/splash/screens/splash_screen.dart:142:30: Error: Undefined name 'AppColors'.
+                      color: AppColors.primary,
+                             ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:23:14: Error: Undefined name 'AppColors'.
+      color: AppColors.primary,
+             ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:30:14: Error: Undefined name 'AppColors'.
+      color: AppColors.secondary,
+             ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:37:14: Error: Undefined name 'AppColors'.
+      color: AppColors.tertiary,
+             ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:146:34: Error: The getter 'AppColors' isn't defined for the class '_OnboardingScreenState'.
+ - '_OnboardingScreenState' is from 'package:classroom_mejorado/features/onboarding/screens/onboarding_screen.dart' ('lib/features/onboarding/screens/onboarding_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                          color: AppColors.textPrimary,
+                                 ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:158:34: Error: The getter 'AppColors' isn't defined for the class '_OnboardingScreenState'.
+ - '_OnboardingScreenState' is from 'package:classroom_mejorado/features/onboarding/screens/onboarding_screen.dart' ('lib/features/onboarding/screens/onboarding_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                          color: AppColors.textSecondary,
+                                 ^^^^^^^^^
+lib/features/onboarding/screens/onboarding_screen.dart:223:38: Error: The getter 'AppColors' isn't defined for the class '_OnboardingScreenState'.
+ - '_OnboardingScreenState' is from 'package:classroom_mejorado/features/onboarding/screens/onboarding_screen.dart' ('lib/features/onboarding/screens/onboarding_screen.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                              color: AppColors.textSecondary,
+                                     ^^^^^^^^^
+lib/features/shared/widgets/theme_switcher_widget.dart:123:24: Error: The getter 'AppColors' isn't defined for the class '_ThemeSwitcherWidgetState'.
+ - '_ThemeSwitcherWidgetState' is from 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart' ('lib/features/shared/widgets/theme_switcher_widget.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                color: AppColors.primary,
+                       ^^^^^^^^^
+lib/features/shared/widgets/theme_switcher_widget.dart:127:28: Error: The getter 'AppColors' isn't defined for the class '_ThemeSwitcherWidgetState'.
+ - '_ThemeSwitcherWidgetState' is from 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart' ('lib/features/shared/widgets/theme_switcher_widget.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                    color: AppColors.primary.withOpacity(0.4),
+                           ^^^^^^^^^
+lib/features/shared/widgets/theme_switcher_widget.dart:172:17: Error: The getter 'AppColors' isn't defined for the class '_ThemeSwitcherWidgetState'.
+ - '_ThemeSwitcherWidgetState' is from 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart' ('lib/features/shared/widgets/theme_switcher_widget.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+              ? AppColors.primary.withOpacity(0.1)
+                ^^^^^^^^^
+lib/features/shared/widgets/theme_switcher_widget.dart:182:21: Error: The getter 'AppColors' isn't defined for the class '_ThemeSwitcherWidgetState'.
+ - '_ThemeSwitcherWidgetState' is from 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart' ('lib/features/shared/widgets/theme_switcher_widget.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                  ? AppColors.primary 
+                    ^^^^^^^^^
+lib/features/shared/widgets/theme_switcher_widget.dart:192:23: Error: The getter 'AppColors' isn't defined for the class '_ThemeSwitcherWidgetState'.
+ - '_ThemeSwitcherWidgetState' is from 'package:classroom_mejorado/features/shared/widgets/theme_switcher_widget.dart' ('lib/features/shared/widgets/theme_switcher_widget.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+                    ? AppColors.primary 
+                      ^^^^^^^^^
+lib/features/shared/widgets/floating_search_button.dart:43:26: Error: The getter 'AppColors' isn't defined for the class 'FloatingSearchButton'.
+ - 'FloatingSearchButton' is from 'package:classroom_mejorado/features/shared/widgets/floating_search_button.dart' ('lib/features/shared/widgets/floating_search_button.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'AppColors'.
+        backgroundColor: AppColors.secondary,
+                         ^^^^^^^^^
+lib/features/shared/widgets/floating_search_button.dart:48:13: Error: The argument type 'Text?' can't be assigned to the parameter type 'Widget' because 'Text?' is nullable and 'Widget' isn't.
+ - 'Text' is from 'package:flutter/src/widgets/text.dart' ('../../../development/flutter/packages/flutter/lib/src/widgets/text.dart').
+ - 'Widget' is from 'package:flutter/src/widgets/framework.dart' ('../../../development/flutter/packages/flutter/lib/src/widgets/framework.dart').
+            ? const Text(
+            ^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/home/mauchly/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.

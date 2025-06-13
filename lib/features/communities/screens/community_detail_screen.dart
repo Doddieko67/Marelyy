@@ -138,7 +138,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen>
       _buildTab("Chat"),
       _buildTab("Tareas"),
       _buildTab("Calendario"),
-      _isAdmin ? _buildTab("IA") : _buildHiddenTab(),
+      _buildTab("IA"),
       _isAdmin ? _buildTab("Admin") : _buildHiddenTab(),
       _buildTab("Ajustes"),
     ];
