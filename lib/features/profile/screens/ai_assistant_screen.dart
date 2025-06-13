@@ -30,8 +30,10 @@ class AIMessage {
   taskSuggestion; // Solo para una tarea, obsoleto si se usa multipleTasks
   final List<Map<String, dynamic>>? multipleTasks;
   final Map<String, dynamic>?
-  updateTaskData; // Para sugerencias de actualización
-  final Map<String, dynamic>? deleteTaskData; // Para sugerencias de eliminación
+  updateTaskData; // Para sugerencias de actualización individual
+  final Map<String, dynamic>? deleteTaskData; // Para sugerencias de eliminación individual
+  final List<Map<String, dynamic>>? multipleUpdates; // Para múltiples actualizaciones
+  final List<Map<String, dynamic>>? multipleDeletions; // Para múltiples eliminaciones
   final Map<String, dynamic>? analysisData;
   final bool isStreaming;
 
@@ -42,8 +44,10 @@ class AIMessage {
     required this.timestamp,
     this.taskSuggestion,
     this.multipleTasks,
-    this.updateTaskData, // Añadido
-    this.deleteTaskData, // Añadido
+    this.updateTaskData,
+    this.deleteTaskData,
+    this.multipleUpdates, // Añadido
+    this.multipleDeletions, // Añadido
     this.analysisData,
     this.isStreaming = false,
   });
@@ -221,6 +225,12 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
                     : null,
                 updateTaskData: messageData['updateTaskData'],
                 deleteTaskData: messageData['deleteTaskData'],
+                multipleUpdates: messageData['multipleUpdates'] != null 
+                    ? List<Map<String, dynamic>>.from(messageData['multipleUpdates'])
+                    : null,
+                multipleDeletions: messageData['multipleDeletions'] != null 
+                    ? List<Map<String, dynamic>>.from(messageData['multipleDeletions'])
+                    : null,
                 analysisData: messageData['analysisData'],
               ),
             );
@@ -318,10 +328,10 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         ]
       }
 
-  -   Para sugerencias de ACTUALIZACIÓN de tareas existentes:
+  -   Para sugerencias de ACTUALIZACIÓN de tareas existentes (una o múltiples):
       {
         "type": "update_task_suggestion",
-        "taskId": "id_de_la_tarea_existente_a_actualizar", // MUY IMPORTANTE: ID de la tarea
+        "taskId": "id_de_la_tarea_existente_a_actualizar", // Para una sola tarea
         "updates": { // Objeto con los campos a actualizar y sus nuevos valores
           "title": "Nuevo título si cambia",
           "description": "Nueva descripción si cambia",
@@ -336,13 +346,55 @@ class _AIAssistantScreenState extends State<AIAssistantScreen> {
         "confidence": 0.90
       }
 
-  -   Para sugerencias de ELIMINACIÓN de tareas existentes:
+  -   Para sugerencias de MÚLTIPLES ACTUALIZACIONES de tareas:
+      {
+        "type": "multiple_update_suggestion",
+        "updates": [
+          {
+            "taskId": "id_de_la_tarea_1",
+            "updates": { /* campos a actualizar */ },
+            "reason": "Razón específica para esta tarea",
+            "confidence": 0.85
+          },
+          {
+            "taskId": "id_de_la_tarea_2", 
+            "updates": { /* campos a actualizar */ },
+            "reason": "Razón específica para esta tarea",
+            "confidence": 0.90
+          }
+          // ... más tareas según sea necesario
+        ],
+        "globalReason": "Explicación general de por qué se necesitan estas actualizaciones"
+      }
+
+  -   Para sugerencias de ELIMINACIÓN de tareas existentes (una o múltiples):
       {
         "type": "delete_task_suggestion",
-        "taskId": "id_de_la_tarea_existente_a_eliminar", // MUY IMPORTANTE: ID de la tarea
+        "taskId": "id_de_la_tarea_existente_a_eliminar", // Para una sola tarea
         "taskTitle": "Título de la tarea a eliminar (para confirmación)",
         "reason": "Explicación de por qué se sugiere esta eliminación.",
         "confidence": 0.75
+      }
+
+  -   Para sugerencias de MÚLTIPLES ELIMINACIONES de tareas:
+      {
+        "type": "multiple_delete_suggestion",
+        "deletions": [
+          {
+            "taskId": "id_de_la_tarea_1",
+            "taskTitle": "Título de la tarea 1",
+            "reason": "Razón específica para eliminar esta tarea",
+            "confidence": 0.80
+          },
+          {
+            "taskId": "id_de_la_tarea_2",
+            "taskTitle": "Título de la tarea 2", 
+            "reason": "Razón específica para eliminar esta tarea",
+            "confidence": 0.75
+          }
+          // ... más tareas según sea necesario
+        ],
+        "globalReason": "Explicación general de por qué se necesitan estas eliminaciones"
       }
 
   -   Para análisis, usa JSON con esta estructura:
@@ -1119,6 +1171,8 @@ MÉTRICAS RESUMEN:
         multipleTasks: message.multipleTasks,
         updateTaskData: message.updateTaskData,
         deleteTaskData: message.deleteTaskData,
+        multipleUpdates: message.multipleUpdates,
+        multipleDeletions: message.multipleDeletions,
         analysisData: message.analysisData,
       );
       
@@ -1413,6 +1467,421 @@ MÉTRICAS RESUMEN:
     }
   }
 
+  // Manejar múltiples actualizaciones de tareas
+  Future<void> _handleMultipleUpdateSuggestions(
+    List<Map<String, dynamic>> updates,
+    String? globalReason,
+  ) async {
+    final theme = Theme.of(context);
+    
+    // Confirmar con el usuario
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Confirmar Múltiples Actualizaciones',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: fontFamilyPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (globalReason != null) ...[
+                Text(
+                  'Razón general: $globalReason',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFamily: fontFamilyPrimary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Text(
+                'La IA sugiere actualizar ${updates.length} tareas:',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFamily: fontFamilyPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: updates.length,
+                  itemBuilder: (context, index) {
+                    final update = updates[index];
+                    final taskId = update['taskId'] as String? ?? '';
+                    final updateData = update['updates'] as Map<String, dynamic>? ?? {};
+                    final reason = update['reason'] as String? ?? '';
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tarea ID: ${taskId.length > 10 ? taskId.substring(0, 10) + '...' : taskId}',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontFamily: fontFamilyPrimary,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            if (reason.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                reason,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontFamily: fontFamilyPrimary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            Text(
+                              'Cambios:',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                fontFamily: fontFamilyPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            ...updateData.entries.map(
+                              (entry) => Padding(
+                                padding: const EdgeInsets.only(left: 8),
+                                child: Text(
+                                  '• ${entry.key}: ${entry.value}',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontFamily: fontFamilyPrimary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Actualizar Todas',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      int successCount = 0;
+      int errorCount = 0;
+      
+      for (final update in updates) {
+        try {
+          final taskId = update['taskId'] as String?;
+          final updateData = update['updates'] as Map<String, dynamic>?;
+          
+          if (taskId == null || updateData == null || updateData.isEmpty) {
+            errorCount++;
+            continue;
+          }
+
+          // Convertir priority y state a los formatos correctos si están presentes
+          Map<String, dynamic> finalUpdates = Map.from(updateData);
+          
+          if (finalUpdates.containsKey('priority')) {
+            finalUpdates['priority'] = task_utils.TaskUtils.parseTaskPriority(
+              finalUpdates['priority'] as String?,
+            );
+          }
+          
+          if (finalUpdates.containsKey('state')) {
+            finalUpdates['state'] = task_utils.TaskUtils.parseTaskState(
+              finalUpdates['state'] as String?,
+            );
+          }
+
+          final success = await task_utils.TaskUtils.updateTaskDetails(
+            communityId: widget.communityId,
+            taskId: taskId,
+            updateData: finalUpdates,
+          );
+          
+          if (!success) {
+            errorCount++;
+            continue;
+          }
+          
+          successCount++;
+        } catch (e) {
+          print('Error updating task ${update['taskId']}: $e');
+          errorCount++;
+        }
+      }
+      
+      if (context.mounted) {
+        String message;
+        if (errorCount == 0) {
+          message = 'Se actualizaron exitosamente $successCount tareas';
+        } else if (successCount == 0) {
+          message = 'Error: No se pudo actualizar ninguna tarea';
+        } else {
+          message = 'Se actualizaron $successCount tareas. $errorCount tuvieron errores';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: errorCount > 0 
+                ? theme.colorScheme.error 
+                : theme.colorScheme.primary,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      _showInfo('Actualizaciones canceladas por el usuario.');
+    }
+  }
+
+  // Manejar múltiples eliminaciones de tareas
+  Future<void> _handleMultipleDeleteSuggestions(
+    List<Map<String, dynamic>> deletions,
+    String? globalReason,
+  ) async {
+    final theme = Theme.of(context);
+    
+    // Confirmar con el usuario
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          'Confirmar Múltiples Eliminaciones',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: fontFamilyPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (globalReason != null) ...[
+                Text(
+                  'Razón general: $globalReason',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFamily: fontFamilyPrimary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Text(
+                'La IA sugiere eliminar ${deletions.length} tareas:',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontFamily: fontFamilyPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: deletions.length,
+                  itemBuilder: (context, index) {
+                    final deletion = deletions[index];
+                    final taskId = deletion['taskId'] as String? ?? '';
+                    final taskTitle = deletion['taskTitle'] as String? ?? 'Tarea sin título';
+                    final reason = deletion['reason'] as String? ?? '';
+                    
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      color: theme.colorScheme.errorContainer.withOpacity(0.1),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              taskTitle,
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                fontFamily: fontFamilyPrimary,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'ID: ${taskId.length > 15 ? taskId.substring(0, 15) + '...' : taskId}',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontFamily: fontFamilyPrimary,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (reason.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Razón: $reason',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  fontFamily: fontFamilyPrimary,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.error.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.error.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning,
+                      color: theme.colorScheme.error,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Esta acción no se puede deshacer.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: fontFamilyPrimary,
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Eliminar Todas',
+              style: TextStyle(
+                fontFamily: fontFamilyPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      int successCount = 0;
+      int errorCount = 0;
+      
+      for (final deletion in deletions) {
+        try {
+          final taskId = deletion['taskId'] as String?;
+          
+          if (taskId == null) {
+            errorCount++;
+            continue;
+          }
+
+          final success = await task_utils.TaskUtils.deleteTask(
+            communityId: widget.communityId,
+            taskId: taskId,
+          );
+          
+          if (!success) {
+            errorCount++;
+            continue;
+          }
+          
+          successCount++;
+        } catch (e) {
+          print('Error deleting task ${deletion['taskId']}: $e');
+          errorCount++;
+        }
+      }
+      
+      if (context.mounted) {
+        String message;
+        if (errorCount == 0) {
+          message = 'Se eliminaron exitosamente $successCount tareas';
+        } else if (successCount == 0) {
+          message = 'Error: No se pudo eliminar ninguna tarea';
+        } else {
+          message = 'Se eliminaron $successCount tareas. $errorCount tuvieron errores';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: errorCount > 0 
+                ? theme.colorScheme.error 
+                : theme.colorScheme.primary,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } else {
+      _showInfo('Eliminaciones canceladas por el usuario.');
+    }
+  }
+
   void _processParsedContent(String rawResponse, AIMessage messageToUpdate) {
     try {
       final jsonMatch = RegExp(r'\{[\s\S]*\}').firstMatch(rawResponse);
@@ -1421,8 +1890,10 @@ MÉTRICAS RESUMEN:
       Map<String, dynamic>? jsonData;
       MessageType newType = MessageType.ai;
       List<Map<String, dynamic>>? multipleTasksData;
-      Map<String, dynamic>? updateSuggestionData; // Nuevo
-      Map<String, dynamic>? deleteSuggestionData; // Nuevo
+      Map<String, dynamic>? updateSuggestionData;
+      Map<String, dynamic>? deleteSuggestionData;
+      List<Map<String, dynamic>>? multipleUpdatesData; // Nuevo
+      List<Map<String, dynamic>>? multipleDeletionsData; // Nuevo
       Map<String, dynamic>? analysisDataMap;
 
       if (jsonMatch != null) {
@@ -1432,20 +1903,26 @@ MÉTRICAS RESUMEN:
         String? suggestionType = jsonData['type'] as String?;
 
         if (suggestionType == 'task_suggestion' && jsonData['tasks'] is List) {
-          newType =
-              MessageType.suggestion; // Sigue siendo suggestion para creación
+          newType = MessageType.suggestion;
           multipleTasksData = List<Map<String, dynamic>>.from(
             jsonData['tasks'],
           );
         } else if (suggestionType == 'update_task_suggestion') {
-          newType = MessageType
-              .suggestion; // Reutilizamos el tipo, pero el dato es diferente
-          updateSuggestionData =
-              jsonData; // Guardamos todo el JSON de actualización
+          newType = MessageType.suggestion;
+          updateSuggestionData = jsonData;
         } else if (suggestionType == 'delete_task_suggestion') {
-          newType = MessageType.suggestion; // Reutilizamos el tipo
-          deleteSuggestionData =
-              jsonData; // Guardamos todo el JSON de eliminación
+          newType = MessageType.suggestion;
+          deleteSuggestionData = jsonData;
+        } else if (suggestionType == 'multiple_update_suggestion') {
+          newType = MessageType.suggestion;
+          multipleUpdatesData = List<Map<String, dynamic>>.from(
+            jsonData['updates'] ?? [],
+          );
+        } else if (suggestionType == 'multiple_delete_suggestion') {
+          newType = MessageType.suggestion;
+          multipleDeletionsData = List<Map<String, dynamic>>.from(
+            jsonData['deletions'] ?? [],
+          );
         } else if (suggestionType == 'analysis') {
           newType = MessageType.analysis;
           analysisDataMap = jsonData;
@@ -1462,8 +1939,10 @@ MÉTRICAS RESUMEN:
           type: newType,
           timestamp: messageToUpdate.timestamp,
           multipleTasks: multipleTasksData,
-          updateTaskData: updateSuggestionData, // Añadido
-          deleteTaskData: deleteSuggestionData, // Añadido
+          updateTaskData: updateSuggestionData,
+          deleteTaskData: deleteSuggestionData,
+          multipleUpdates: multipleUpdatesData, // Añadido
+          multipleDeletions: multipleDeletionsData, // Añadido
           analysisData: analysisDataMap,
           isStreaming: false,
         );
@@ -2232,6 +2711,14 @@ Formato de respuesta:
           if (message.deleteTaskData != null &&
               !message.isStreaming) // ✅ AÑADIDO
             _buildDeleteTaskSuggestionCard(message.deleteTaskData!),
+
+          // Tarjetas de Múltiples Actualizaciones
+          if (message.multipleUpdates != null && !message.isStreaming)
+            _buildMultipleUpdatesCard(message.multipleUpdates!),
+
+          // Tarjetas de Múltiples Eliminaciones
+          if (message.multipleDeletions != null && !message.isStreaming)
+            _buildMultipleDeletionsCard(message.multipleDeletions!),
         ],
       ),
     );
@@ -2519,6 +3006,265 @@ Formato de respuesta:
                   style: TextStyle(fontFamily: fontFamilyPrimary),
                 ),
                 onPressed: () => _handleDeleteTaskSuggestion(suggestion),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                  foregroundColor: theme.colorScheme.onError,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para múltiples actualizaciones
+  Widget _buildMultipleUpdatesCard(List<Map<String, dynamic>> updates) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 12, left: 48),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.edit_note,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Múltiples Actualizaciones (${updates.length})',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontFamily: fontFamilyPrimary,
+                  color: theme.colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Lista compacta de tareas a actualizar
+          Container(
+            constraints: const BoxConstraints(maxHeight: 150),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: math.min(updates.length, 3), // Mostrar máximo 3
+              itemBuilder: (context, index) {
+                final update = updates[index];
+                final taskId = update['taskId'] as String? ?? '';
+                final updateData = update['updates'] as Map<String, dynamic>? ?? {};
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface.withOpacity(0.7),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Tarea: ${taskId.length > 15 ? taskId.substring(0, 15) + '...' : taskId}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontFamily: fontFamilyPrimary,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Cambios: ${updateData.keys.join(', ')}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontFamily: fontFamilyPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          if (updates.length > 3) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Y ${updates.length - 3} tareas más...',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: fontFamilyPrimary,
+                fontStyle: FontStyle.italic,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => _showInfo('Actualizaciones múltiples rechazadas.'),
+                child: Text(
+                  'Rechazar',
+                  style: TextStyle(
+                    fontFamily: fontFamilyPrimary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.edit, size: 18),
+                label: Text(
+                  'Actualizar ${updates.length}',
+                  style: const TextStyle(fontFamily: fontFamilyPrimary),
+                ),
+                onPressed: () => _handleMultipleUpdateSuggestions(updates, null),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Widget para múltiples eliminaciones
+  Widget _buildMultipleDeletionsCard(List<Map<String, dynamic>> deletions) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 12, left: 48),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.errorContainer.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.colorScheme.error.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.delete_sweep,
+                color: theme.colorScheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Múltiples Eliminaciones (${deletions.length})',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontFamily: fontFamilyPrimary,
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          
+          // Lista compacta de tareas a eliminar
+          Container(
+            constraints: const BoxConstraints(maxHeight: 150),
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: math.min(deletions.length, 3), // Mostrar máximo 3
+              itemBuilder: (context, index) {
+                final deletion = deletions[index];
+                final taskTitle = deletion['taskTitle'] as String? ?? 'Tarea sin título';
+                final reason = deletion['reason'] as String? ?? '';
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.errorContainer.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        taskTitle,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontFamily: fontFamilyPrimary,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.error,
+                        ),
+                      ),
+                      if (reason.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          reason,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontFamily: fontFamilyPrimary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          
+          if (deletions.length > 3) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Y ${deletions.length - 3} tareas más...',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontFamily: fontFamilyPrimary,
+                fontStyle: FontStyle.italic,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => _showInfo('Eliminaciones múltiples rechazadas.'),
+                child: Text(
+                  'Rechazar',
+                  style: TextStyle(
+                    fontFamily: fontFamilyPrimary,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.delete_forever, size: 18),
+                label: Text(
+                  'Eliminar ${deletions.length}',
+                  style: const TextStyle(fontFamily: fontFamilyPrimary),
+                ),
+                onPressed: () => _handleMultipleDeleteSuggestions(deletions, null),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.error,
                   foregroundColor: theme.colorScheme.onError,
@@ -3185,47 +3931,6 @@ Formato de respuesta:
                             textInputAction: TextInputAction.send,
                             enabled: canInteract,
                           ),
-                        ),
-                        IconButton(
-                          onPressed: canInteract ? _showImagePickerOptions : null,
-                          icon: Stack(
-                            children: [
-                              Icon(
-                                Icons.image_outlined,
-                                color: canInteract
-                                    ? theme.colorScheme.secondary
-                                    : theme.colorScheme.outline,
-                              ),
-                              if (_selectedImages.isNotEmpty)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    padding: EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    constraints: BoxConstraints(
-                                      minWidth: 16,
-                                      minHeight: 16,
-                                    ),
-                                    child: Text(
-                                      '${_selectedImages.length}',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          tooltip: _selectedImages.isEmpty 
-                              ? 'Adjuntar imagen' 
-                              : 'Adjuntar imagen (${_selectedImages.length} seleccionadas)',
                         ),
                         IconButton(
                           onPressed: canInteract ? _sendMessage : null,

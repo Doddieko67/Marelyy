@@ -1,0 +1,19 @@
+❯ flutter run --dart-define-from-file=env.json
+Launching lib/main.dart on 2201116PG in debug mode...
+lib/features/profile/screens/ai_assistant_screen.dart:1630:38: Error: Member not found: 'TaskUtils.updateTask'.
+          await task_utils.TaskUtils.updateTask(
+                                     ^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildDebug'.
+> Process 'command '/home/mauchly/development/flutter/bin/flutter'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.

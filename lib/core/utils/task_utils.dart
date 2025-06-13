@@ -340,6 +340,26 @@ class TaskUtils {
               (updateData['state'] as TaskState).firestoreName;
         }
       }
+      
+      // Manejar dueDate: convertir String a Timestamp si es necesario
+      if (updateData.containsKey('dueDate')) {
+        final dueDate = updateData['dueDate'];
+        if (dueDate is String && dueDate.isNotEmpty) {
+          try {
+            // Convertir fecha en formato "YYYY-MM-DD" a Timestamp
+            final parsedDate = DateTime.parse(dueDate);
+            updateData['dueDate'] = Timestamp.fromDate(parsedDate);
+          } catch (e) {
+            print('Error parsing dueDate "$dueDate": $e');
+            // Si no se puede parsear, remover el campo para evitar errores
+            updateData.remove('dueDate');
+          }
+        } else if (dueDate == null || (dueDate is String && dueDate.isEmpty)) {
+          // Si es null o string vacío, mantener como null para remover la fecha
+          updateData['dueDate'] = null;
+        }
+        // Si ya es Timestamp, no hacer nada
+      }
 
       await FirebaseFirestore.instance
           .collection('communities')

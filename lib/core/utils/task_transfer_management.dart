@@ -138,7 +138,7 @@ class TaskTransferManager {
               child: Text(
                 'Tienes $taskCount tarea${taskCount > 1 ? 's' : ''} asignada${taskCount > 1 ? 's' : ''}. ¿Qué deseas hacer con ella${taskCount > 1 ? 's' : ''}?',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 ),
               ),
             ),

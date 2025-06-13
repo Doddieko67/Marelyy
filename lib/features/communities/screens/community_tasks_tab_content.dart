@@ -34,21 +34,29 @@ class _CommunityTasksTabContentState extends State<CommunityTasksTabContent> {
       }
     }
 
-    // ✅ RETROCOMPATIBILIDAD: Mapear valores antiguos
+    // ✅ RETROCOMPATIBILIDAD: Mapear valores antiguos y estados en español
     switch (stateLower) {
       case 'testing': // Valor antiguo -> nuevo valor
         return TaskState.underReview;
       case 'todo':
       case 'to_do':
+      case 'por hacer': // Estado en español
+      case 'pending':
+      case 'pendiente':
         return TaskState.toDo;
       case 'inprogress':
       case 'in_progress':
+      case 'haciendo': // Estado en español
+      case 'en progreso':
         return TaskState.doing;
       case 'review':
       case 'under_review':
+      case 'por revisar': // Estado en español
         return TaskState.underReview;
       case 'completed':
       case 'finished':
+      case 'hecho': // Estado en español
+      case 'completado':
         return TaskState.done;
       default:
         print(

@@ -89,13 +89,28 @@ class _CommunitiesScreenState extends State<CommunitiesScreen>
       });
     }
 
-    // Ordenar por última visita (más recientes primero)
+    // Ordenar: comunidades nunca visitadas primero, luego por última visita (más recientes primero)
     communitiesWithVisit.sort((a, b) {
-      final DateTime aVisit =
-          a['lastVisit'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final DateTime bVisit =
-          b['lastVisit'] ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return bVisit.compareTo(aVisit);
+      final DateTime? aVisit = a['lastVisit'];
+      final DateTime? bVisit = b['lastVisit'];
+      
+      // Si ambas nunca han sido visitadas, mantener orden actual
+      if (aVisit == null && bVisit == null) {
+        return 0;
+      }
+      
+      // Si 'a' nunca ha sido visitada pero 'b' sí, 'a' va primero
+      if (aVisit == null && bVisit != null) {
+        return -1;
+      }
+      
+      // Si 'b' nunca ha sido visitada pero 'a' sí, 'b' va primero
+      if (bVisit == null && aVisit != null) {
+        return 1;
+      }
+      
+      // Si ambas han sido visitadas, ordenar por fecha más reciente primero
+      return bVisit!.compareTo(aVisit!);
     });
 
     return communitiesWithVisit;

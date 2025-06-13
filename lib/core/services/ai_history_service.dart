@@ -17,6 +17,8 @@ class AIHistoryService {
     List<Map<String, dynamic>>? multipleTasks,
     Map<String, dynamic>? updateTaskData,
     Map<String, dynamic>? deleteTaskData,
+    List<Map<String, dynamic>>? multipleUpdates,
+    List<Map<String, dynamic>>? multipleDeletions,
     Map<String, dynamic>? analysisData,
   }) async {
     try {
@@ -34,6 +36,8 @@ class AIHistoryService {
         'multipleTasks': multipleTasks,
         'updateTaskData': updateTaskData,
         'deleteTaskData': deleteTaskData,
+        'multipleUpdates': multipleUpdates,
+        'multipleDeletions': multipleDeletions,
         'analysisData': analysisData,
         'isPublic': true, // Público para toda la comunidad
       });
